@@ -73,6 +73,34 @@ Migrations are applied automatically on API startup via a hosted service. If you
 docker compose up --build backend
 ```
 
+
+## User monthly cashflow forecast
+The API now stores cashflow data per **user** and **month**, and computes how much the user can spend per day without reaching zero.
+
+Endpoints:
+- `PUT /api/users/{userId}/months/{year}/{month}/cashflow` to save/update monthly inputs for a user.
+- `POST /api/users/{userId}/months/{year}/{month}/forecast` to compute realtime forecast for that user-month.
+
+Saved month input includes:
+- `startBalance`, `savingsStart`, `withdrawnFromSavings`
+- `incomes[]` (`date`, `amount`, `label`)
+- `fixedExpenses[]` (`name`, `amount`, `isActive`, `frequency`, `dueDate`/`dueDayOfMonth`, `category`)
+- `variableExpenses[]` (`date`, `amount`, `label`)
+- `transactions[]` (`date`, `amount`, `label`)
+
+Forecast request includes:
+- `periodMode`: `RestOfMonth` or `ThisAndNextMonth`
+- `desiredMoneyPerDay` (optional)
+- `scenarios[]` (optional emergency expenses)
+
+Forecast output includes at minimum:
+- current balance + savings state
+- spent so far + budgeted fixed/variable totals
+- remaining budget
+- money/day for today, tomorrow, yesterday (null-safe on invalid day divisors)
+- emergency scenario table
+- possible savings + days until goal (when desiredMoneyPerDay is provided)
+
 ## Troubleshooting
 - **Ports already in use:** update `API_PORT` or `FRONTEND_PORT` in `.env`.
 - **Database connection failures:** verify the `.env` values match the Postgres container settings.

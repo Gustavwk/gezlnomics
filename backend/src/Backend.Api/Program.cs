@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json.Serialization;
 using Backend.Application;
 using Backend.Application.Abstractions;
 using Backend.Application.Models;
@@ -7,6 +8,11 @@ using Backend.Application.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 builder.Services.AddCors(options =>
 {
@@ -48,6 +54,30 @@ app.MapPost("/api/expenses", async (CreateExpenseRequest request, IExpenseServic
 {
     var expense = await expenseService.AddExpenseAsync(request, cancellationToken);
     return Results.Ok(expense);
+});
+
+app.MapPut("/api/users/{userId:guid}/months/{year:int}/{month:int}/cashflow", async (
+    Guid userId,
+    int year,
+    int month,
+    UpsertUserMonthCashflowRequest request,
+    ICashflowForecastService cashflowForecastService,
+    CancellationToken cancellationToken) =>
+{
+    await cashflowForecastService.SaveUserMonthAsync(userId, year, month, request, cancellationToken);
+    return Results.NoContent();
+});
+
+app.MapPost("/api/users/{userId:guid}/months/{year:int}/{month:int}/forecast", async (
+    Guid userId,
+    int year,
+    int month,
+    CashflowForecastRequest request,
+    ICashflowForecastService cashflowForecastService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await cashflowForecastService.GetForecastAsync(userId, year, month, request, cancellationToken);
+    return result is null ? Results.NotFound() : Results.Ok(result);
 });
 
 app.Run();

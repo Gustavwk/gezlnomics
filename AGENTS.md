@@ -28,3 +28,7 @@ Hvis `make` ikke er tilgængelig, brug:
 1. `docker compose config` skal være valid.
 2. Dokumentation skal matche faktisk konfiguration (`.env`, porte, services).
 3. Nye filer skal have meningsfulde navne og kort forklaring i README ved behov.
+
+
+## Kodekonvention
+- Skriv kode (klassenavne, feltnavne, metoder, kommentarer og API-kontrakter) på engelsk fremadrettet.
