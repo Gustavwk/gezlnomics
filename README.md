@@ -4,14 +4,38 @@ Containerized boilerplate with a PostgreSQL database, .NET 8 Web API (onion arch
 
 ## Prerequisites
 - Docker + Docker Compose
+- (Optional) `make` for shorter run commands
 
-## How to run
-1. Ensure the `.env` file in the repo root has values that work for your machine.
-2. Start everything:
+## Services in Docker Compose
+The application runs in a meaningful 3-container setup:
+- **postgres**: persistent PostgreSQL database
+- **backend**: .NET 8 API with automatic EF Core migration on startup
+- **frontend**: built React app served through Nginx
+
+## Quick start
+1. Copy env file:
    ```bash
-   docker compose up --build
+   cp .env.example .env
    ```
-3. Open the frontend at `http://localhost:3000` (default).
+2. Start all containers:
+   ```bash
+   make up
+   ```
+   or:
+   ```bash
+   docker compose up --build -d
+   ```
+3. Open the app:
+   - Frontend: `http://localhost:3000`
+   - API health: `http://localhost:8080/health`
+
+## Useful commands
+```bash
+make config   # validate docker compose file
+make ps       # show running containers and health
+make logs     # stream logs
+make down     # stop and remove containers
+```
 
 ## Backend architecture
 The backend follows a strict onion architecture:
