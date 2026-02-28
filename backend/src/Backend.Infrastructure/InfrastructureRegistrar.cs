@@ -23,6 +23,7 @@ public sealed class InfrastructureRegistrar : IInfrastructureRegistrar
 
         services.AddScoped<IExpenseGateway, ExpenseGateway>();
         services.AddScoped<IStartingCapitalGateway, StartingCapitalGateway>();
+        services.AddScoped<IUserMonthlyCashflowGateway, UserMonthlyCashflowGateway>();
 
         services.AddHostedService<MigrationHostedService>();
     }
