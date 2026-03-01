@@ -41,7 +41,8 @@ export function LedgerKpiPanel({ summary }: Props) {
   const visteDageTilNaesteLoen = erFremtidigPeriode ? diffDays(iDag, naesteLoendag) : summary.daysUntilNextPayday;
   const vistePengePrDag = erFremtidigPeriode
     ? Math.round((Math.max(0, summary.forecastBalance) / visteDageTilNaesteLoen) * 100) / 100
-    : summary.moneyPerDay;
+    : summary.moneyPerDayStartOfDay;
+  const vistePengePrDagFremad = erFremtidigPeriode ? vistePengePrDag : summary.moneyPerDay;
 
   return (
     <section className="panel">
@@ -54,9 +55,21 @@ export function LedgerKpiPanel({ summary }: Props) {
           </strong>
         </article>
         <article className={moneyPerDayKpiClass(vistePengePrDag)}>
-          <h3>Penge pr. dag</h3>
+          <h3>Penge pr. dag (før i dag)</h3>
           <strong>
             {vistePengePrDag.toFixed(2)} {summary.currencyCode}
+          </strong>
+        </article>
+        <article className={moneyPerDayKpiClass(vistePengePrDagFremad)}>
+          <h3>Penge/dag frem</h3>
+          <strong>
+            {vistePengePrDagFremad.toFixed(2)} {summary.currencyCode}
+          </strong>
+        </article>
+        <article className={summary.spentTodayExcludingRecurring > 0 ? 'kpi-warn' : 'kpi-ok'}>
+          <h3>Forbrug i dag (uden faste)</h3>
+          <strong>
+            {summary.spentTodayExcludingRecurring.toFixed(2)} {summary.currencyCode}
           </strong>
         </article>
         <article className={visteDageTilNaesteLoen <= 3 ? 'kpi-warn' : 'kpi-ok'}>

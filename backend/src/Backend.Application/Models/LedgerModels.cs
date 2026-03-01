@@ -8,6 +8,8 @@ public sealed record LedgerSummaryDto(
     decimal ForecastBalance,
     int DaysUntilNextPayday,
     decimal MoneyPerDay,
+    decimal MoneyPerDayStartOfDay,
+    decimal SpentTodayExcludingRecurring,
     decimal CumulativeSpending,
     string CurrencyCode
 );

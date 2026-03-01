@@ -21,7 +21,7 @@ services:
       context: ./backend
     restart: unless-stopped
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ConnectionStrings__Default: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       Frontend__Origin: ${FRONTEND_ORIGIN}
     ports:
@@ -30,10 +30,12 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail http://localhost:8080/health || exit 1"]
+      test: ["CMD-SHELL", "curl --fail http://localhost:8080/health/ready || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 10
+    volumes:
+      - backend_dataprotection_keys:/root/.aspnet/DataProtection-Keys
 
   frontend:
     build:
@@ -54,3 +56,4 @@ services:
 
 volumes:
   postgres_data:
+  backend_dataprotection_keys:

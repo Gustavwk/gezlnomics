@@ -50,6 +50,17 @@ public sealed class LedgerService : ILedgerService
         var forecastBalance = currentBalance + futureDelta + recurringFutureDelta;
         var daysUntilNextPayday = Math.Max(1, nextPayday.DayNumber - asOf.DayNumber);
         var moneyPerDay = Math.Round(Math.Max(0m, forecastBalance) / daysUntilNextPayday, 2, MidpointRounding.AwayFromZero);
+        var spentTodayExcludingRecurring = transactions
+            .Where(t =>
+                t.Status == TransactionStatus.Active &&
+                t.Date == asOf &&
+                t.RecurringRuleId is null &&
+                t.Kind is TransactionKind.ExpenseActual or TransactionKind.SavingsTransferOut)
+            .Sum(t => Math.Abs(t.Amount));
+        var moneyPerDayStartOfDay = Math.Round(
+            Math.Max(0m, forecastBalance + spentTodayExcludingRecurring) / daysUntilNextPayday,
+            2,
+            MidpointRounding.AwayFromZero);
 
         var cumulativeSpending = transactions
             .Where(t => t.Status == TransactionStatus.Active && t.Date >= periodStart && t.Date <= asOf)
@@ -72,6 +83,8 @@ public sealed class LedgerService : ILedgerService
             forecastBalance,
             daysUntilNextPayday,
             moneyPerDay,
+            moneyPerDayStartOfDay,
+            spentTodayExcludingRecurring,
             cumulativeSpending + recurringSpending,
             settings.CurrencyCode
         );

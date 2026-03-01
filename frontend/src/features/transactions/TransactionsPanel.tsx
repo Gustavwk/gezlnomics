@@ -65,6 +65,7 @@ export function TransactionsPanel({ transaktioner, onCreate, onDelete }: Props) 
             <li key={t.id} className="row mellem">
               <span>
                 {t.date} - {t.category} - {t.amount.toFixed(2)}
+                {t.note ? ` - Note: ${t.note}` : ''}
               </span>
               <button onClick={() => onDelete(t.id)}>Slet</button>
             </li>
