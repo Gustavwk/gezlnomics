@@ -1,4 +1,5 @@
 using Backend.Application.Abstractions;
+using Backend.Infrastructure.Auth;
 using Backend.Infrastructure.Data;
 using Backend.Infrastructure.Gateways;
 using Backend.Infrastructure.HostedServices;
@@ -18,11 +19,15 @@ public sealed class InfrastructureRegistrar : IInfrastructureRegistrar
             throw new InvalidOperationException("Connection string 'Default' was not configured.");
         }
 
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(connectionString));
+        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
-        services.AddScoped<IExpenseGateway, ExpenseGateway>();
-        services.AddScoped<IStartingCapitalGateway, StartingCapitalGateway>();
+        services.AddScoped<IUserGateway, UserGateway>();
+        services.AddScoped<IUserSettingsGateway, UserSettingsGateway>();
+        services.AddScoped<IIncomePeriodGateway, IncomePeriodGateway>();
+        services.AddScoped<ITransactionGateway, TransactionGateway>();
+        services.AddScoped<IRecurringRuleGateway, RecurringRuleGateway>();
+
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
         services.AddHostedService<MigrationHostedService>();
     }

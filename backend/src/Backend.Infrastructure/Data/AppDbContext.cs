@@ -9,29 +9,79 @@ public sealed class AppDbContext : DbContext
     {
     }
 
-    public DbSet<Expense> Expenses => Set<Expense>();
-    public DbSet<StartingCapital> StartingCapitals => Set<StartingCapital>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<UserSettings> UserSettings => Set<UserSettings>();
+    public DbSet<IncomePeriod> IncomePeriods => Set<IncomePeriod>();
+    public DbSet<LedgerTransaction> Transactions => Set<LedgerTransaction>();
+    public DbSet<RecurringRule> RecurringRules => Set<RecurringRule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Expense>(builder =>
+        modelBuilder.Entity<User>(builder =>
         {
-            builder.ToTable("Expenses");
-            builder.HasKey(e => e.Id);
-            builder.Property(e => e.Amount).HasPrecision(18, 2);
-            builder.Property(e => e.Date).HasColumnType("date");
-            builder.Property(e => e.Category).HasMaxLength(200);
-            builder.Property(e => e.Note).HasMaxLength(1000);
-            builder.Property(e => e.CreatedAt).HasColumnType("timestamp with time zone");
+            builder.ToTable("Users");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Email).HasMaxLength(320);
+            builder.HasIndex(x => x.Email).IsUnique();
+            builder.Property(x => x.PasswordHash).HasMaxLength(500);
+            builder.Property(x => x.CreatedAt).HasColumnType("timestamp with time zone");
+            builder.Property(x => x.UpdatedAt).HasColumnType("timestamp with time zone");
         });
 
-        modelBuilder.Entity<StartingCapital>(builder =>
+        modelBuilder.Entity<UserSettings>(builder =>
         {
-            builder.ToTable("StartingCapitals");
-            builder.HasKey(sc => sc.Id);
-            builder.Property(sc => sc.Amount).HasPrecision(18, 2);
-            builder.Property(sc => sc.Date).HasColumnType("date");
-            builder.Property(sc => sc.CreatedAt).HasColumnType("timestamp with time zone");
+            builder.ToTable("UserSettings");
+            builder.HasKey(x => x.UserId);
+            builder.Property(x => x.CurrencyCode).HasMaxLength(8);
+            builder.Property(x => x.Timezone).HasMaxLength(100);
+            builder.Property(x => x.UpdatedAt).HasColumnType("timestamp with time zone");
+            builder.HasOne(x => x.User)
+                .WithOne(x => x.Settings)
+                .HasForeignKey<UserSettings>(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<IncomePeriod>(builder =>
+        {
+            builder.ToTable("IncomePeriods");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.PeriodStartDate).HasColumnType("date");
+            builder.Property(x => x.PeriodEndDate).HasColumnType("date");
+            builder.Property(x => x.StartingBalance).HasPrecision(18, 2);
+            builder.Property(x => x.CreatedAt).HasColumnType("timestamp with time zone");
+            builder.HasIndex(x => new { x.UserId, x.PeriodStartDate, x.PeriodEndDate });
+        });
+
+        modelBuilder.Entity<LedgerTransaction>(builder =>
+        {
+            builder.ToTable("Transactions");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Date).HasColumnType("date");
+            builder.Property(x => x.Amount).HasPrecision(18, 2);
+            builder.Property(x => x.Category).HasMaxLength(200);
+            builder.Property(x => x.Note).HasMaxLength(1000);
+            builder.Property(x => x.Kind).HasConversion<string>().HasMaxLength(40);
+            builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            builder.Property(x => x.CreatedAt).HasColumnType("timestamp with time zone");
+            builder.Property(x => x.UpdatedAt).HasColumnType("timestamp with time zone");
+            builder.HasIndex(x => new { x.UserId, x.Date });
+        });
+
+        modelBuilder.Entity<RecurringRule>(builder =>
+        {
+            builder.ToTable("RecurringRules");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Title).HasMaxLength(200);
+            builder.Property(x => x.Amount).HasPrecision(18, 2);
+            builder.Property(x => x.Category).HasMaxLength(200);
+            builder.Property(x => x.Note).HasMaxLength(1000);
+            builder.Property(x => x.RuleKind).HasConversion<string>().HasMaxLength(40);
+            builder.Property(x => x.Frequency).HasConversion<string>().HasMaxLength(20);
+            builder.Property(x => x.StartDate).HasColumnType("date");
+            builder.Property(x => x.EndDate).HasColumnType("date");
+            builder.Property(x => x.CreatedAt).HasColumnType("timestamp with time zone");
+            builder.Property(x => x.UpdatedAt).HasColumnType("timestamp with time zone");
+            builder.HasIndex(x => new { x.UserId, x.IsActive, x.StartDate });
         });
     }
 }

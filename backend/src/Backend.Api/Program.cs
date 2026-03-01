@@ -1,12 +1,40 @@
-using System.Reflection;
+using System.Security.Claims;
+using Backend.Api;
 using Backend.Application;
 using Backend.Application.Abstractions;
 using Backend.Application.Models;
 using Backend.Application.Services;
+using Backend.Domain;
+using Backend.Infrastructure;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "auth_token";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.Events = new CookieAuthenticationEvents
+        {
+            OnRedirectToLogin = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddCors(options =>
 {
@@ -17,7 +45,8 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins(frontendOrigin)
                 .AllowAnyHeader()
-                .AllowAnyMethod();
+                .AllowAnyMethod()
+                .AllowCredentials();
         }
         else
         {
@@ -28,53 +57,205 @@ builder.Services.AddCors(options =>
     });
 });
 
-InfrastructureLoader.Register(builder.Services, builder.Configuration);
+new InfrastructureRegistrar().Register(builder.Services, builder.Configuration);
 
 var app = builder.Build();
 
 app.UseCors("Frontend");
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok("OK"));
-
 app.MapGet("/api/ping", (IPingService pingService) => Results.Ok(pingService.GetPing()));
 
-app.MapGet("/api/expenses", async (IExpenseService expenseService, CancellationToken cancellationToken) =>
+app.MapPost("/api/auth/signup", async (SignupRequest request, IAuthService authService, HttpContext httpContext, CancellationToken cancellationToken) =>
 {
-    var expenses = await expenseService.GetExpensesAsync(cancellationToken);
-    return Results.Ok(expenses);
+    try
+    {
+        var user = await authService.SignupAsync(request, cancellationToken);
+        await SignInAsync(httpContext, user);
+        return Results.Ok(user);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
 });
 
-app.MapPost("/api/expenses", async (CreateExpenseRequest request, IExpenseService expenseService, CancellationToken cancellationToken) =>
+app.MapPost("/api/auth/login", async (LoginRequest request, IAuthService authService, HttpContext httpContext, CancellationToken cancellationToken) =>
 {
-    var expense = await expenseService.AddExpenseAsync(request, cancellationToken);
-    return Results.Ok(expense);
+    var user = await authService.LoginAsync(request, cancellationToken);
+    if (user is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    await SignInAsync(httpContext, user);
+    return Results.Ok(user);
+});
+
+app.MapPost("/api/auth/logout", async (HttpContext httpContext) =>
+{
+    await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    return Results.Ok();
+});
+
+app.MapGet("/api/auth/me", async (ICurrentUserService currentUserService, IAuthService authService, CancellationToken cancellationToken) =>
+{
+    var userId = currentUserService.GetUserId();
+    if (!userId.HasValue)
+    {
+        return Results.Unauthorized();
+    }
+
+    var user = await authService.GetCurrentUserAsync(userId.Value, cancellationToken);
+    return user is null ? Results.Unauthorized() : Results.Ok(user);
+}).RequireAuthorization();
+
+var settingsGroup = app.MapGroup("/api/settings").RequireAuthorization();
+settingsGroup.MapGet("/", async (ICurrentUserService currentUserService, ISettingsService settingsService, CancellationToken cancellationToken) =>
+{
+    var settings = await settingsService.GetAsync(currentUserService.GetRequiredUserId(), cancellationToken);
+    return Results.Ok(settings);
+});
+settingsGroup.MapPut("/", async (UpdateSettingsRequest request, ICurrentUserService currentUserService, ISettingsService settingsService, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var settings = await settingsService.UpdateAsync(currentUserService.GetRequiredUserId(), request, cancellationToken);
+        return Results.Ok(settings);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
+});
+
+var incomeGroup = app.MapGroup("/api/income-periods").RequireAuthorization();
+incomeGroup.MapGet("/", async (DateOnly? from, DateOnly? to, ICurrentUserService currentUserService, IIncomePeriodService service, CancellationToken cancellationToken) =>
+{
+    var periods = await service.GetAllAsync(currentUserService.GetRequiredUserId(), from, to, cancellationToken);
+    return Results.Ok(periods);
+});
+incomeGroup.MapPost("/", async (UpsertIncomePeriodRequest request, ICurrentUserService currentUserService, IIncomePeriodService service, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var period = await service.CreateAsync(currentUserService.GetRequiredUserId(), request, cancellationToken);
+        return Results.Ok(period);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
+});
+incomeGroup.MapPut("/{id:guid}", async (Guid id, UpsertIncomePeriodRequest request, ICurrentUserService currentUserService, IIncomePeriodService service, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var period = await service.UpdateAsync(currentUserService.GetRequiredUserId(), id, request, cancellationToken);
+        return period is null ? Results.NotFound() : Results.Ok(period);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
+});
+incomeGroup.MapDelete("/{id:guid}", async (Guid id, ICurrentUserService currentUserService, IIncomePeriodService service, CancellationToken cancellationToken) =>
+{
+    var deleted = await service.DeleteAsync(currentUserService.GetRequiredUserId(), id, cancellationToken);
+    return deleted ? Results.NoContent() : Results.NotFound();
+});
+
+var txGroup = app.MapGroup("/api/transactions").RequireAuthorization();
+txGroup.MapGet("/", async (DateOnly? from, DateOnly? to, TransactionKind? kind, string? category, string? q, ICurrentUserService currentUserService, ITransactionService service, CancellationToken cancellationToken) =>
+{
+    var transactions = await service.GetAllAsync(currentUserService.GetRequiredUserId(), from, to, kind, category, q, cancellationToken);
+    return Results.Ok(transactions);
+});
+txGroup.MapPost("/", async (UpsertTransactionRequest request, ICurrentUserService currentUserService, ITransactionService service, CancellationToken cancellationToken) =>
+{
+    var transaction = await service.CreateAsync(currentUserService.GetRequiredUserId(), request, cancellationToken);
+    return Results.Ok(transaction);
+});
+txGroup.MapPut("/{id:guid}", async (Guid id, UpsertTransactionRequest request, ICurrentUserService currentUserService, ITransactionService service, CancellationToken cancellationToken) =>
+{
+    var transaction = await service.UpdateAsync(currentUserService.GetRequiredUserId(), id, request, cancellationToken);
+    return transaction is null ? Results.NotFound() : Results.Ok(transaction);
+});
+txGroup.MapDelete("/{id:guid}", async (Guid id, ICurrentUserService currentUserService, ITransactionService service, CancellationToken cancellationToken) =>
+{
+    var deleted = await service.DeleteAsync(currentUserService.GetRequiredUserId(), id, cancellationToken);
+    return deleted ? Results.NoContent() : Results.NotFound();
+});
+
+var recurringGroup = app.MapGroup("/api/recurring-rules").RequireAuthorization();
+recurringGroup.MapGet("/", async (ICurrentUserService currentUserService, IRecurringRuleService service, CancellationToken cancellationToken) =>
+{
+    var rules = await service.GetAllAsync(currentUserService.GetRequiredUserId(), cancellationToken);
+    return Results.Ok(rules);
+});
+recurringGroup.MapPost("/", async (UpsertRecurringRuleRequest request, ICurrentUserService currentUserService, IRecurringRuleService service, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var rule = await service.CreateAsync(currentUserService.GetRequiredUserId(), request, cancellationToken);
+        return Results.Ok(rule);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
+});
+recurringGroup.MapPut("/{id:guid}", async (Guid id, UpsertRecurringRuleRequest request, ICurrentUserService currentUserService, IRecurringRuleService service, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var rule = await service.UpdateAsync(currentUserService.GetRequiredUserId(), id, request, cancellationToken);
+        return rule is null ? Results.NotFound() : Results.Ok(rule);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
+});
+recurringGroup.MapDelete("/{id:guid}", async (Guid id, ICurrentUserService currentUserService, IRecurringRuleService service, CancellationToken cancellationToken) =>
+{
+    var deleted = await service.DeleteAsync(currentUserService.GetRequiredUserId(), id, cancellationToken);
+    return deleted ? Results.NoContent() : Results.NotFound();
+});
+
+var ledgerGroup = app.MapGroup("/api/ledger").RequireAuthorization();
+ledgerGroup.MapGet("/summary", async (DateOnly? asOf, ICurrentUserService currentUserService, ILedgerService service, CancellationToken cancellationToken) =>
+{
+    var summary = await service.GetSummaryAsync(currentUserService.GetRequiredUserId(), asOf ?? DateOnly.FromDateTime(DateTime.UtcNow), cancellationToken);
+    return Results.Ok(summary);
+});
+ledgerGroup.MapGet("/timeline", async (DateOnly from, DateOnly to, ICurrentUserService currentUserService, ILedgerService service, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var timeline = await service.GetTimelineAsync(currentUserService.GetRequiredUserId(), from, to, cancellationToken);
+        return Results.Ok(timeline);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
 });
 
 app.Run();
 
-internal static class InfrastructureLoader
+static async Task SignInAsync(HttpContext httpContext, AuthUserDto user)
 {
-    public static void Register(IServiceCollection services, IConfiguration configuration)
+    var claims = new List<Claim>
     {
-        var assemblyName = "Backend.Infrastructure";
-        var assemblyPath = Path.Combine(AppContext.BaseDirectory, $"{assemblyName}.dll");
-        var assembly = File.Exists(assemblyPath)
-            ? Assembly.LoadFrom(assemblyPath)
-            : Assembly.Load(assemblyName);
+        new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+        new(ClaimTypes.Email, user.Email)
+    };
 
-        var registrarType = assembly.GetTypes()
-            .FirstOrDefault(type => typeof(IInfrastructureRegistrar).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
+    var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+    var principal = new ClaimsPrincipal(identity);
 
-        if (registrarType is null)
-        {
-            throw new InvalidOperationException("Infrastructure registrar was not found.");
-        }
-
-        if (Activator.CreateInstance(registrarType) is not IInfrastructureRegistrar registrar)
-        {
-            throw new InvalidOperationException("Infrastructure registrar could not be instantiated.");
-        }
-
-        registrar.Register(services, configuration);
-    }
+    await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 }

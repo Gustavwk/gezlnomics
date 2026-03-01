@@ -1,23 +1,22 @@
-# Gezlnomics Boilerplate
+# Gezlnomics
 
-Containerized boilerplate with a PostgreSQL database, .NET 8 Web API (onion architecture + EF Core migrations), and a React + Vite frontend.
+Containerized full-stack app for a manual "true ledger":
+- register period starting balance (salary after tax)
+- log transactions (actual, planned, savings in/out)
+- add recurring rules
+- track current balance, forecast balance, and money-per-day
 
-## Prerequisites
-- Docker + Docker Compose
-- (Optional) `make` for shorter run commands
+## Stack
+- `postgres` (database)
+- `backend` (.NET 8 minimal API + EF Core)
+- `frontend` (React/Vite built and served by Nginx)
 
-## Services in Docker Compose
-The application runs in a meaningful 3-container setup:
-- **postgres**: persistent PostgreSQL database
-- **backend**: .NET 8 API with automatic EF Core migration on startup
-- **frontend**: built React app served through Nginx
-
-## Quick start
+## Run
 1. Copy env file:
    ```bash
    cp .env.example .env
    ```
-2. Start all containers:
+2. Start everything:
    ```bash
    make up
    ```
@@ -25,59 +24,60 @@ The application runs in a meaningful 3-container setup:
    ```bash
    docker compose up --build -d
    ```
-3. Open the app:
+3. Open:
    - Frontend: `http://localhost:3000`
-   - API health: `http://localhost:8080/health`
+   - Health: `http://localhost:8080/health`
 
-## Useful commands
+## Default commands
 ```bash
-make config   # validate docker compose file
-make ps       # show running containers and health
-make logs     # stream logs
-make down     # stop and remove containers
+make config   # validate compose
+make ps       # status
+make logs     # logs
+make down     # stop
 ```
 
-## Backend architecture
-The backend follows a strict onion architecture:
-- **Backend.Domain**: entities only (no dependencies)
-- **Backend.Application**: interfaces + application services (depends on Domain)
-- **Backend.Infrastructure**: EF Core + gateway implementations (depends on Domain + Application)
-- **Backend.Api**: presentation layer (depends on Application only)
+## Auth model
+MVP uses email/password with cookie-based auth.
 
-The API dynamically loads Infrastructure at runtime to keep project references aligned with the dependency rules.
+Endpoints:
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
 
-## Migrations
-Migrations live in **Backend.Infrastructure**.
+## Core API
+Settings:
+- `GET /api/settings/`
+- `PUT /api/settings/`
 
-### Add a new migration (locally)
-```bash
-cd backend
+Income periods (startsaldo):
+- `GET /api/income-periods/`
+- `POST /api/income-periods/`
+- `PUT /api/income-periods/{id}`
+- `DELETE /api/income-periods/{id}`
 
-dotnet ef migrations add AddSomething \
-  --project src/Backend.Infrastructure \
-  --startup-project src/Backend.Api
-```
+Transactions:
+- `GET /api/transactions/`
+- `POST /api/transactions/`
+- `PUT /api/transactions/{id}`
+- `DELETE /api/transactions/{id}`
 
-### Apply migrations (locally)
-```bash
-cd backend
+Recurring rules:
+- `GET /api/recurring-rules/`
+- `POST /api/recurring-rules/`
+- `PUT /api/recurring-rules/{id}`
+- `DELETE /api/recurring-rules/{id}`
 
-dotnet ef database update \
-  --project src/Backend.Infrastructure \
-  --startup-project src/Backend.Api
-```
+Ledger:
+- `GET /api/ledger/summary?asOf=YYYY-MM-DD`
+- `GET /api/ledger/timeline?from=YYYY-MM-DD&to=YYYY-MM-DD`
 
-### Apply migrations in Docker
-Migrations are applied automatically on API startup via a hosted service. If you need to run it manually, rebuild the API container:
-```bash
-docker compose up --build backend
-```
+## Ledger logic
+- Period is payday-to-payday (configured in user settings).
+- `Current balance` = period starting balance + signed actual transactions up to today.
+- `Forecast balance` = current balance + future transactions + recurring occurrences until period end.
+- `Money/day` = `max(0, forecast balance) / max(1, days until next payday)`.
 
-## Troubleshooting
-- **Ports already in use:** update `API_PORT` or `FRONTEND_PORT` in `.env`.
-- **Database connection failures:** verify the `.env` values match the Postgres container settings.
-- **Migration issues:** delete the volume `postgres_data` and restart:
-  ```bash
-  docker compose down -v
-  docker compose up --build
-  ```
+## Notes
+- All finance data is manual input by design (no bank sync/import in MVP).
+- EF migrations run on backend startup via hosted service.
