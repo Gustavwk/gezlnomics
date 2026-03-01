@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+﻿import { FormEvent, useState } from 'react';
 import { frekvenser, transaktionstyper } from '../../constants/labels';
 import type { CreateRecurringRulePayload, RecurringRule } from '../../types/models';
 
@@ -12,19 +12,21 @@ export function FasteUdgifterPanel({ fasteUdgifter, onCreate, onDelete }: Props)
   const iDag = new Date().toISOString().slice(0, 10);
   const [fastTitel, setFastTitel] = useState('');
   const [fastBelob, setFastBelob] = useState('0');
-  const [fastKategori, setFastKategori] = useState('Faste udgifter');
   const [fastNote, setFastNote] = useState('');
   const [fastType, setFastType] = useState('1');
   const [fastFrekvens, setFastFrekvens] = useState('1');
   const [fastStartDato, setFastStartDato] = useState(iDag);
   const [fastSlutDato, setFastSlutDato] = useState('');
+  const [visListe, setVisListe] = useState(false);
+  const antalFasteUdgifter = fasteUdgifter.length;
+  const samletFastBeloeb = fasteUdgifter.reduce((sum, f) => sum + Math.abs(f.amount), 0);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     await onCreate({
       title: fastTitel,
       amount: Number(fastBelob),
-      category: fastKategori,
+      category: 'Faste udgifter',
       note: fastNote || null,
       ruleKind: Number(fastType),
       frequency: Number(fastFrekvens),
@@ -51,10 +53,6 @@ export function FasteUdgifterPanel({ fasteUdgifter, onCreate, onDelete }: Props)
         <label>
           Beløb
           <input type="number" step="0.01" value={fastBelob} onChange={(e) => setFastBelob(e.target.value)} required />
-        </label>
-        <label>
-          Kategori
-          <input value={fastKategori} onChange={(e) => setFastKategori(e.target.value)} required />
         </label>
         <label>
           Type
@@ -91,16 +89,27 @@ export function FasteUdgifterPanel({ fasteUdgifter, onCreate, onDelete }: Props)
         <button type="submit">Tilføj fast udgift</button>
       </form>
 
-      <ul className="liste">
-        {fasteUdgifter.map((f) => (
-          <li key={f.id} className="row mellem">
-            <span>
-              {f.title} • {transaktionstyper[f.ruleKind]} • {frekvenser[f.frequency]} • {f.amount.toFixed(2)}
-            </span>
-            <button onClick={() => onDelete(f.id)}>Slet</button>
-          </li>
-        ))}
-      </ul>
+      <div className="liste-toolbar">
+        <div className="liste-summary">
+          <strong>{antalFasteUdgifter}</strong> poster • <strong>{samletFastBeloeb.toFixed(2)}</strong> i alt
+        </div>
+        <button type="button" className="btn-small" onClick={() => setVisListe((prev) => !prev)}>
+          {visListe ? 'Skjul faste udgifter' : 'Vis faste udgifter'}
+        </button>
+      </div>
+
+      <div className={`collapsible ${visListe ? '' : 'collapsed'}`}>
+        <ul className="liste">
+          {fasteUdgifter.map((f) => (
+            <li key={f.id} className="row mellem">
+              <span>
+                {f.title} • {transaktionstyper[f.ruleKind]} • {frekvenser[f.frequency]} • {f.amount.toFixed(2)}
+              </span>
+              <button onClick={() => onDelete(f.id)}>Slet</button>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }

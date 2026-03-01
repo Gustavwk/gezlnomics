@@ -225,7 +225,7 @@ button:active {
 
 .kpi {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin: 10px 0;
 }
@@ -235,6 +235,26 @@ button:active {
   border: 1px solid var(--c-border);
   border-radius: var(--r-xs);
   padding: 10px;
+}
+
+.kpi article.kpi-bad {
+  background: rgba(214, 72, 72, 0.18);
+  border-color: #9e2f2f;
+}
+
+.kpi article.kpi-warn {
+  background: rgba(240, 173, 78, 0.2);
+  border-color: #8f6626;
+}
+
+.kpi article.kpi-ok {
+  background: rgba(122, 170, 206, 0.22);
+  border-color: #355872;
+}
+
+.kpi article.kpi-good {
+  background: rgba(69, 170, 88, 0.2);
+  border-color: #2f7a41;
 }
 
 .kpi h3 {
@@ -249,6 +269,31 @@ button:active {
   margin: 10px 0 0;
   display: grid;
   gap: 8px;
+}
+
+.liste-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.liste-summary {
+  font-size: 13px;
+  color: #2f4f67;
+}
+
+.collapsible {
+  max-height: 1200px;
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height 260ms ease, opacity 220ms ease;
+}
+
+.collapsible.collapsed {
+  max-height: 0;
+  opacity: 0;
 }
 
 .liste li {
@@ -275,6 +320,11 @@ button:active {
   margin-top: 0;
 }
 
+.auth-panel {
+  box-shadow: none;
+  background: rgba(247, 248, 240, 0.98);
+}
+
 .fejl {
   color: #a11616;
 }
@@ -289,6 +339,27 @@ button:active {
 @media (max-width: 900px) {
   .app {
     padding: 12px;
+  }
+
+  .app-grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .area-header {
+    order: 1;
+  }
+
+  .area-transactions {
+    order: 2;
+  }
+
+  .area-ledger {
+    order: 3;
+  }
+
+  .area-recurring {
+    order: 4;
   }
 
   .row {
@@ -315,5 +386,27 @@ button:active {
 
   .ledger-controls {
     grid-template-columns: 1fr;
+  }
+
+  .transaction-form {
+    grid-template-columns: 1fr;
+  }
+
+  .transaction-form button,
+  .transaction-form label,
+  .transaction-form input,
+  .transaction-form select {
+    width: 100%;
+  }
+
+  .transaction-form .align-end {
+    justify-self: stretch;
+    align-self: stretch;
+  }
+
+  .liste li.row.mellem {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }

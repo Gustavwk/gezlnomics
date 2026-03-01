@@ -245,11 +245,13 @@ export function useLedgerApp() {
     try {
       const naesteStart = addDays(summary.periodEnd, 1);
       const naesteSlut = addDays(addMonths(naesteStart, 1), -1);
+      const senesteKendteStartsaldo = perioder.length > 0 ? perioder[0].startingBalance : 0;
+      const startSaldoNyPeriode = aktivPeriode?.startingBalance ?? senesteKendteStartsaldo;
 
       await apiClient.incomePeriods.create({
         periodStartDate: naesteStart,
         periodEndDate: naesteSlut,
-        startingBalance: 0
+        startingBalance: startSaldoNyPeriode
       });
 
       await hentAlt({ periodStart: naesteStart, periodEnd: naesteSlut });

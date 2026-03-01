@@ -12,16 +12,18 @@ export function TransactionsPanel({ transaktioner, onCreate, onDelete }: Props) 
   const iDag = new Date().toISOString().slice(0, 10);
   const [txDato, setTxDato] = useState(iDag);
   const [txBelob, setTxBelob] = useState('0');
-  const [txKategori, setTxKategori] = useState('Diverse');
   const [txNote, setTxNote] = useState('');
   const [txType, setTxType] = useState('0');
+  const [visListe, setVisListe] = useState(true);
+  const antalTransaktioner = transaktioner.length;
+  const samletTransaktionsBeloeb = transaktioner.reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     await onCreate({
       date: txDato,
       amount: Number(txBelob),
-      category: txKategori,
+      category: transaktionstyper[Number(txType)] ?? 'Transaktion',
       note: txNote || null,
       kind: Number(txType),
       status: 0
@@ -32,14 +34,11 @@ export function TransactionsPanel({ transaktioner, onCreate, onDelete }: Props) 
   return (
     <section className="panel">
       <h2>Transaktioner</h2>
+
       <form onSubmit={handleSubmit} className="grid fire transaction-form">
         <label>
           Dato
           <input type="date" value={txDato} onChange={(e) => setTxDato(e.target.value)} required />
-        </label>
-        <label>
-          Kategori
-          <input value={txKategori} onChange={(e) => setTxKategori(e.target.value)} required />
         </label>
         <label>
           Type
@@ -62,16 +61,27 @@ export function TransactionsPanel({ transaktioner, onCreate, onDelete }: Props) 
         <button type="submit" className="align-end">Tilføj transaktion</button>
       </form>
 
-      <ul className="liste">
-        {transaktioner.map((t) => (
-          <li key={t.id} className="row mellem">
-            <span>
-              {t.date} • {transaktionstyper[t.kind]} • {t.category} • {t.amount.toFixed(2)}
-            </span>
-            <button onClick={() => onDelete(t.id)}>Slet</button>
-          </li>
-        ))}
-      </ul>
+      <div className="liste-toolbar">
+        <div className="liste-summary">
+          <strong>{antalTransaktioner}</strong> poster • <strong>{samletTransaktionsBeloeb.toFixed(2)}</strong> i alt
+        </div>
+        <button type="button" className="btn-small" onClick={() => setVisListe((prev) => !prev)}>
+          {visListe ? 'Skjul udgifter' : 'Vis udgifter'}
+        </button>
+      </div>
+
+      <div className={`collapsible ${visListe ? '' : 'collapsed'}`}>
+        <ul className="liste">
+          {transaktioner.map((t) => (
+            <li key={t.id} className="row mellem">
+              <span>
+                {t.date} • {transaktionstyper[t.kind]} • {t.category} • {t.amount.toFixed(2)}
+              </span>
+              <button onClick={() => onDelete(t.id)}>Slet</button>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
