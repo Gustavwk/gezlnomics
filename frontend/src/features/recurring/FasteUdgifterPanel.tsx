@@ -1,5 +1,5 @@
-ï»¿import { FormEvent, useState } from 'react';
-import { frekvenser, transaktionstyper } from '../../constants/labels';
+import { FormEvent, useState } from 'react';
+import { frekvenser } from '../../constants/labels';
 import type { CreateRecurringRulePayload, RecurringRule } from '../../types/models';
 
 type Props = {
@@ -9,11 +9,11 @@ type Props = {
 };
 
 export function FasteUdgifterPanel({ fasteUdgifter, onCreate, onDelete }: Props) {
+  const fastUdgiftType = 1;
   const iDag = new Date().toISOString().slice(0, 10);
   const [fastTitel, setFastTitel] = useState('');
   const [fastBelob, setFastBelob] = useState('0');
   const [fastNote, setFastNote] = useState('');
-  const [fastType, setFastType] = useState('1');
   const [fastFrekvens, setFastFrekvens] = useState('1');
   const [fastStartDato, setFastStartDato] = useState(iDag);
   const [fastSlutDato, setFastSlutDato] = useState('');
@@ -28,7 +28,7 @@ export function FasteUdgifterPanel({ fasteUdgifter, onCreate, onDelete }: Props)
       amount: Number(fastBelob),
       category: 'Faste udgifter',
       note: fastNote || null,
-      ruleKind: Number(fastType),
+      ruleKind: fastUdgiftType,
       frequency: Number(fastFrekvens),
       startDate: fastStartDato,
       endDate: fastSlutDato || null,
@@ -41,57 +41,53 @@ export function FasteUdgifterPanel({ fasteUdgifter, onCreate, onDelete }: Props)
   }
 
   return (
-    <section className="panel">
-      <h2>Faste udgifter</h2>
-      <p className="hint">Faste udgifter er tilbagevendende poster (fx husleje, internet, abonnementer).</p>
+    <section className="panel recurring-panel">
+      <div className="recurring-head">
+        <h2>Faste udgifter</h2>
+        <p className="hint">Tilbagevendende poster som husleje, internet og abonnementer.</p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="grid fire">
-        <label>
-          Titel
-          <input value={fastTitel} onChange={(e) => setFastTitel(e.target.value)} required />
-        </label>
-        <label>
-          BelÃ¸b
-          <input type="number" step="0.01" value={fastBelob} onChange={(e) => setFastBelob(e.target.value)} required />
-        </label>
-        <label>
-          Type
-          <select value={fastType} onChange={(e) => setFastType(e.target.value)}>
-            {Object.entries(transaktionstyper).map(([v, l]) => (
-              <option key={v} value={v}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Frekvens
-          <select value={fastFrekvens} onChange={(e) => setFastFrekvens(e.target.value)}>
-            {Object.entries(frekvenser).map(([v, l]) => (
-              <option key={v} value={v}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Startdato
-          <input type="date" value={fastStartDato} onChange={(e) => setFastStartDato(e.target.value)} required />
-        </label>
-        <label>
-          Slutdato (valgfri)
-          <input type="date" value={fastSlutDato} onChange={(e) => setFastSlutDato(e.target.value)} />
-        </label>
-        <label>
-          Note
+      <form onSubmit={handleSubmit} className="recurring-form">
+        <div className="recurring-grid">
+          <label>
+            Titel
+            <input value={fastTitel} onChange={(e) => setFastTitel(e.target.value)} required />
+          </label>
+          <label>
+            Beløb
+            <input type="number" step="0.01" value={fastBelob} onChange={(e) => setFastBelob(e.target.value)} required />
+          </label>
+          <label>
+            Frekvens
+            <select value={fastFrekvens} onChange={(e) => setFastFrekvens(e.target.value)}>
+              {Object.entries(frekvenser).map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Startdato
+            <input type="date" value={fastStartDato} onChange={(e) => setFastStartDato(e.target.value)} required />
+          </label>
+          <label>
+            Slutdato (valgfri)
+            <input type="date" value={fastSlutDato} onChange={(e) => setFastSlutDato(e.target.value)} />
+          </label>
+        </div>
+
+        <label className="recurring-note">
+          Note (valgfri)
           <input value={fastNote} onChange={(e) => setFastNote(e.target.value)} />
         </label>
-        <button type="submit">TilfÃ¸j fast udgift</button>
+
+        <button type="submit" className="recurring-submit">Tilføj fast udgift</button>
       </form>
 
       <div className="liste-toolbar">
         <div className="liste-summary">
-          <strong>{antalFasteUdgifter}</strong> poster â€¢ <strong>{samletFastBeloeb.toFixed(2)}</strong> i alt
+          <strong>{antalFasteUdgifter}</strong> poster • <strong>{samletFastBeloeb.toFixed(2)}</strong> i alt
         </div>
         <button type="button" className="btn-small" onClick={() => setVisListe((prev) => !prev)}>
           {visListe ? 'Skjul faste udgifter' : 'Vis faste udgifter'}
@@ -99,12 +95,11 @@ export function FasteUdgifterPanel({ fasteUdgifter, onCreate, onDelete }: Props)
       </div>
 
       <div className={`collapsible ${visListe ? '' : 'collapsed'}`}>
-        <ul className="liste">
+        <ul className="liste recurring-list">
           {fasteUdgifter.map((f) => (
-            <li key={f.id} className="row mellem">
-              <span>
-                {f.title} â€¢ {transaktionstyper[f.ruleKind]} â€¢ {frekvenser[f.frequency]} â€¢ {f.amount.toFixed(2)}
-              </span>
+            <li key={f.id} className="row mellem recurring-item">
+              <span className="recurring-item-main">{f.title}</span>
+              <span className="recurring-item-meta">{frekvenser[f.frequency]} • {f.amount.toFixed(2)}</span>
               <button onClick={() => onDelete(f.id)}>Slet</button>
             </li>
           ))}
