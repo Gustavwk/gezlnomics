@@ -53,4 +53,16 @@ public sealed class IncomePeriodGateway : IIncomePeriodGateway
         _dbContext.IncomePeriods.Remove(period);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task DeleteAllByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var items = await _dbContext.IncomePeriods.Where(x => x.UserId == userId).ToListAsync(cancellationToken);
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        _dbContext.IncomePeriods.RemoveRange(items);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

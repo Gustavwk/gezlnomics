@@ -77,4 +77,16 @@ public sealed class TransactionGateway : ITransactionGateway
         _dbContext.Transactions.Remove(transaction);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task DeleteAllByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var items = await _dbContext.Transactions.Where(x => x.UserId == userId).ToListAsync(cancellationToken);
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        _dbContext.Transactions.RemoveRange(items);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

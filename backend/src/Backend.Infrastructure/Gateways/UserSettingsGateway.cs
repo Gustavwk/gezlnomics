@@ -34,4 +34,16 @@ public sealed class UserSettingsGateway : IUserSettingsGateway
 
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task DeleteByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var existing = await _dbContext.UserSettings.FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
+        if (existing is null)
+        {
+            return;
+        }
+
+        _dbContext.UserSettings.Remove(existing);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

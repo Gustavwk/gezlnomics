@@ -6,4 +6,5 @@ public interface IUserSettingsGateway
 {
     Task<UserSettings?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken);
     Task UpsertAsync(UserSettings settings, CancellationToken cancellationToken);
+    Task DeleteByUserIdAsync(Guid userId, CancellationToken cancellationToken);
 }

@@ -10,4 +10,5 @@ public interface IIncomePeriodGateway
     Task AddAsync(IncomePeriod period, CancellationToken cancellationToken);
     Task UpdateAsync(IncomePeriod period, CancellationToken cancellationToken);
     Task DeleteAsync(IncomePeriod period, CancellationToken cancellationToken);
+    Task DeleteAllByUserIdAsync(Guid userId, CancellationToken cancellationToken);
 }

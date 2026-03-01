@@ -50,4 +50,16 @@ public sealed class RecurringRuleGateway : IRecurringRuleGateway
         _dbContext.RecurringRules.Remove(rule);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task DeleteAllByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var items = await _dbContext.RecurringRules.Where(x => x.UserId == userId).ToListAsync(cancellationToken);
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        _dbContext.RecurringRules.RemoveRange(items);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

@@ -248,6 +248,19 @@ recurringGroup.MapDelete("/{id:guid}", async (Guid id, ICurrentUserService curre
     return deleted ? Results.NoContent() : Results.NotFound();
 });
 
+var accountGroup = app.MapGroup("/api/account").RequireAuthorization();
+accountGroup.MapGet("/export", async (ICurrentUserService currentUserService, IAccountService service, CancellationToken cancellationToken) =>
+{
+    var export = await service.ExportAsync(currentUserService.GetRequiredUserId(), cancellationToken);
+    return export is null ? Results.NotFound() : Results.Ok(export);
+});
+accountGroup.MapDelete("", async (ICurrentUserService currentUserService, IAccountService service, HttpContext httpContext, CancellationToken cancellationToken) =>
+{
+    await service.DeleteAccountAsync(currentUserService.GetRequiredUserId(), cancellationToken);
+    await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    return Results.NoContent();
+});
+
 var ledgerGroup = app.MapGroup("/api/ledger").RequireAuthorization();
 ledgerGroup.MapGet("/summary", async (DateOnly? asOf, ICurrentUserService currentUserService, ILedgerService service, CancellationToken cancellationToken) =>
 {
@@ -282,3 +295,8 @@ static async Task SignInAsync(HttpContext httpContext, AuthUserDto user)
 
     await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 }
+
+public partial class Program
+{
+}
+

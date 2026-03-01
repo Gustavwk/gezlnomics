@@ -14,6 +14,7 @@ public static class DependencyInjection
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<IRecurringRuleService, RecurringRuleService>();
         services.AddScoped<ILedgerService, LedgerService>();
+        services.AddScoped<IAccountService, AccountService>();
         return services;
     }
 }

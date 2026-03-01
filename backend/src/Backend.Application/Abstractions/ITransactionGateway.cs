@@ -10,4 +10,5 @@ public interface ITransactionGateway
     Task AddAsync(LedgerTransaction transaction, CancellationToken cancellationToken);
     Task UpdateAsync(LedgerTransaction transaction, CancellationToken cancellationToken);
     Task DeleteAsync(LedgerTransaction transaction, CancellationToken cancellationToken);
+    Task DeleteAllByUserIdAsync(Guid userId, CancellationToken cancellationToken);
 }

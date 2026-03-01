@@ -10,4 +10,5 @@ public interface IRecurringRuleGateway
     Task AddAsync(RecurringRule rule, CancellationToken cancellationToken);
     Task UpdateAsync(RecurringRule rule, CancellationToken cancellationToken);
     Task DeleteAsync(RecurringRule rule, CancellationToken cancellationToken);
+    Task DeleteAllByUserIdAsync(Guid userId, CancellationToken cancellationToken);
 }
