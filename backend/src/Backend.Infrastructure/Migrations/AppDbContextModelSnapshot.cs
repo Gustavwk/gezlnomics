@@ -11,7 +11,7 @@ namespace Backend.Infrastructure.Migrations;
 [DbContext(typeof(AppDbContext))]
 partial class AppDbContextModelSnapshot : ModelSnapshot
 {
-    protected override void BuildTargetModel(ModelBuilder modelBuilder)
+    protected override void BuildModel(ModelBuilder modelBuilder)
     {
         modelBuilder
             .HasAnnotation("ProductVersion", "8.0.7")
