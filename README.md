@@ -39,6 +39,24 @@ make down     # stop
 ## Auth model
 MVP uses email/password with cookie-based auth.
 
+## OpenAPI + frontend typer
+- Backend eksponerer Swagger/OpenAPI i `Development`.
+- OpenAPI JSON findes på: `http://localhost:8080/swagger/v1/swagger.json`.
+- Frontend-typer genereres fra OpenAPI og committes i repo.
+
+Kommandoer (køres i `frontend`):
+```bash
+npm run types:generate   # generer src/generated/api-types.ts fra swagger
+npm run types:check      # regenerer + fail hvis generated fil har ændringer
+```
+
+Workflow ved API-ændringer:
+1. Start backend i development.
+2. Kør `npm run types:generate` i frontend.
+3. Commit både backend-ændringer og opdateret `src/generated/api-types.ts`.
+
+CI validerer også, at den genererede typefil er opdateret.
+
 Endpoints:
 - `POST /api/auth/signup`
 - `POST /api/auth/login`

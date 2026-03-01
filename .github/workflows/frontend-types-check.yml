@@ -1,0 +1,55 @@
+name: Frontend Types Check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-generated-types:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Start backend stack
+        run: docker compose up -d postgres backend
+
+      - name: Wait for swagger
+        shell: bash
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:8080/swagger/v1/swagger.json >/dev/null; then
+              echo "Swagger is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Swagger endpoint did not become ready in time"
+          exit 1
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm install
+
+      - name: Generate frontend API types
+        working-directory: frontend
+        run: npm run types:generate
+
+      - name: Ensure generated types are committed
+        run: git diff --exit-code frontend/src/generated/api-types.ts
+
+      - name: Show compose logs on failure
+        if: failure()
+        run: docker compose logs --tail=200
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down
