@@ -52,7 +52,11 @@ body {
   grid-column: 1 / -1;
 }
 
-.area-ledger {
+.area-kpi {
+  grid-column: 1 / -1;
+}
+
+.area-period {
   grid-column: 1 / -1;
 }
 
@@ -351,11 +355,15 @@ button:active {
   }
 
   .area-transactions {
+    order: 3;
+  }
+
+  .area-kpi {
     order: 2;
   }
 
-  .area-ledger {
-    order: 3;
+  .area-period {
+    order: 5;
   }
 
   .area-recurring {
@@ -389,7 +397,12 @@ button:active {
   }
 
   .transaction-form {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .transaction-form > * {
+    grid-column: 1 / -1 !important;
   }
 
   .transaction-form button,
@@ -399,9 +412,26 @@ button:active {
     width: 100%;
   }
 
+  .transaction-form label {
+    font-size: 15px;
+  }
+
+  .transaction-form input,
+  .transaction-form select,
+  .transaction-form button {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 12px;
+  }
+
   .transaction-form .align-end {
     justify-self: stretch;
     align-self: stretch;
+  }
+
+  .liste-toolbar {
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
 
   .liste li.row.mellem {

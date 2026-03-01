@@ -1,16 +1,8 @@
-﻿import { FormEvent } from 'react';
 import { MoneyPerDayThreshold } from '../../constants/kpi';
 import type { LedgerSummary } from '../../types/models';
 
 type Props = {
   summary: LedgerSummary;
-  startSaldo: string;
-  periodeValg: { key: string; label: string }[];
-  valgtPeriodeNoegle: string;
-  setStartSaldo: (value: string) => void;
-  onSaveStartsaldo: () => Promise<void>;
-  onVaelgPeriode: (noegle: string) => Promise<void>;
-  onOpretNaestePeriode: () => Promise<void>;
 };
 
 function addDays(isoDate: string, days: number): string {
@@ -41,21 +33,7 @@ function moneyPerDayKpiClass(value: number): string {
   return 'kpi-good';
 }
 
-export function LedgerPanel({
-  summary,
-  startSaldo,
-  periodeValg,
-  valgtPeriodeNoegle,
-  setStartSaldo,
-  onSaveStartsaldo,
-  onVaelgPeriode,
-  onOpretNaestePeriode
-}: Props) {
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    await onSaveStartsaldo();
-  }
-
+export function LedgerKpiPanel({ summary }: Props) {
   const iDag = new Date().toISOString().slice(0, 10);
   const naesteLoendag = addDays(summary.periodEnd, 1);
   const erFremtidigPeriode = summary.periodStart > iDag;
@@ -67,8 +45,7 @@ export function LedgerPanel({
 
   return (
     <section className="panel">
-      <h2>Lønperiode</h2>
-
+      <h2>Overblik</h2>
       <div className="kpi">
         <article className={summary.currentBalance < 0 ? 'kpi-bad' : 'kpi-ok'}>
           <h3>Nuværende saldo</h3>
@@ -86,42 +63,6 @@ export function LedgerPanel({
           <h3>Dage til næste løn</h3>
           <strong>{visteDageTilNaesteLoen}</strong>
         </article>
-      </div>
-
-      <p>
-        {summary.periodStart} til {summary.periodEnd}
-      </p>
-
-      <div className="ledger-controls">
-        <div className="periode-toolbar">
-          <label>
-            Måned/periode
-            <select value={valgtPeriodeNoegle} onChange={(e) => void onVaelgPeriode(e.target.value)}>
-              {periodeValg.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="button" className="align-end btn-small" onClick={() => void onOpretNaestePeriode()}>
-            Opret næste periode
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="startsaldo-form">
-          <label>
-            Startsaldo for denne lønperiode
-            <input
-              type="number"
-              step="0.01"
-              value={startSaldo}
-              onChange={(e) => setStartSaldo(e.target.value)}
-              required
-            />
-          </label>
-          <button type="submit" className="align-end btn-small">Gem startsaldo</button>
-        </form>
       </div>
     </section>
   );

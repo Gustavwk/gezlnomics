@@ -1,6 +1,7 @@
 ﻿import { AuthPanel } from './features/auth/AuthPanel';
 import { AppHeader } from './features/layout/AppHeader';
-import { LedgerPanel } from './features/ledger/LedgerPanel';
+import { LedgerKpiPanel } from './features/ledger/LedgerKpiPanel';
+import { LedgerPeriodPanel } from './features/ledger/LedgerPeriodPanel';
 import { FasteUdgifterPanel } from './features/recurring/FasteUdgifterPanel';
 import { TransactionsPanel } from './features/transactions/TransactionsPanel';
 import { useLedgerApp } from './hooks/useLedgerApp';
@@ -54,9 +55,16 @@ function App() {
         </div>
 
         {summary && (
-          <div className="area-ledger">
-            <LedgerPanel
-              summary={summary}
+          <div className="area-kpi">
+            <LedgerKpiPanel summary={summary} />
+          </div>
+        )}
+
+        {summary && (
+          <div className="area-period">
+            <LedgerPeriodPanel
+              periodStart={summary.periodStart}
+              periodEnd={summary.periodEnd}
               startSaldo={startSaldo}
               periodeValg={periodeValg}
               valgtPeriodeNoegle={valgtPeriodeNoegle}
