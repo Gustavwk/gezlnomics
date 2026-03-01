@@ -6,6 +6,27 @@ Containerized full-stack app for a manual "true ledger":
 - add recurring rules
 - track current balance, forecast balance, and money-per-day KPIs
 
+## Hvad kan appen bruges til?
+Gezlnomics er en personlig budget- og likviditetsapp til dig, der vil have et simpelt overblik over din måned uden bankintegration.
+
+Du kan bruge den til at:
+- oprette bruger og logge ind
+- sætte startsaldo for lønperioder
+- registrere daglige udgifter/transaktioner med note
+- oprette faste udgifter (tilbagevendende poster)
+- skifte mellem perioder og oprette næste periode
+- se KPI-overblik:
+  - nuværende saldo
+  - penge pr. dag (før dagens forbrug)
+  - penge pr. dag fremadrettet
+  - forbrug i dag (uden faste udgifter)
+  - dage til næste løn
+
+Den er især nyttig til:
+- daglig styring af rådighedsbeløb
+- at undgå at bruge for meget tidligt i perioden
+- at forstå forskellen mellem faktiske udgifter og faste planlagte udgifter
+
 ## Stack
 - `postgres` (database)
 - `backend` (.NET 8 minimal API + EF Core)

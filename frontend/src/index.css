@@ -9,7 +9,7 @@
   --c-accent: #fafafa;
   --c-accent-hover: #ffffff;
   --c-focus: #ffffff;
-  --r-xs: 10px;
+  --r-xs: 6px;
 
   font-family: "Bahnschrift", "Aptos", "Segoe UI Variable Text", "Segoe UI", "Tahoma", sans-serif;
   color: var(--c-text);
