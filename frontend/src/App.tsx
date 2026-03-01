@@ -14,21 +14,24 @@ function App() {
     transaktioner,
     fasteUdgifter,
     startSaldo,
+    periodeValg,
+    valgtPeriodeNoegle,
     setStartSaldo,
     handleAuth,
     handleLogout,
-    opdater,
     gemStartsaldo,
     opretTransaktion,
     sletTransaktion,
     opretFastUdgift,
-    sletFastUdgift
+    sletFastUdgift,
+    vaelgPeriode,
+    opretNaestePeriode
   } = useLedgerApp();
 
   if (indlaeser) {
     return (
       <main className="app">
-        <p>Indlæser...</p>
+        <p className="panel">Indlæser...</p>
       </main>
     );
   }
@@ -36,35 +39,51 @@ function App() {
   if (!bruger) {
     return (
       <main className="app">
-        <AuthPanel fejl={fejl} onSubmit={handleAuth} />
+        <section className="auth-center">
+          <AuthPanel fejl={fejl} onSubmit={handleAuth} />
+        </section>
       </main>
     );
   }
 
   return (
     <main className="app">
-      <AppHeader bruger={bruger} onRefresh={opdater} onLogout={handleLogout} />
+      <section className="app-grid">
+        <div className="area-header">
+          <AppHeader bruger={bruger} onLogout={handleLogout} />
+        </div>
 
-      {summary && (
-        <LedgerPanel
-          summary={summary}
-          startSaldo={startSaldo}
-          setStartSaldo={setStartSaldo}
-          onSaveStartsaldo={gemStartsaldo}
-        />
-      )}
+        {summary && (
+          <div className="area-ledger">
+            <LedgerPanel
+              summary={summary}
+              startSaldo={startSaldo}
+              periodeValg={periodeValg}
+              valgtPeriodeNoegle={valgtPeriodeNoegle}
+              setStartSaldo={setStartSaldo}
+              onSaveStartsaldo={gemStartsaldo}
+              onVaelgPeriode={vaelgPeriode}
+              onOpretNaestePeriode={opretNaestePeriode}
+            />
+          </div>
+        )}
 
-      <TransactionsPanel
-        transaktioner={transaktioner}
-        onCreate={opretTransaktion}
-        onDelete={sletTransaktion}
-      />
+        <div className="area-transactions">
+          <TransactionsPanel
+            transaktioner={transaktioner}
+            onCreate={opretTransaktion}
+            onDelete={sletTransaktion}
+          />
+        </div>
 
-      <FasteUdgifterPanel
-        fasteUdgifter={fasteUdgifter}
-        onCreate={opretFastUdgift}
-        onDelete={sletFastUdgift}
-      />
+        <div className="area-recurring">
+          <FasteUdgifterPanel
+            fasteUdgifter={fasteUdgifter}
+            onCreate={opretFastUdgift}
+            onDelete={sletFastUdgift}
+          />
+        </div>
+      </section>
 
       {fejl && <p className="fejl">{fejl}</p>}
     </main>

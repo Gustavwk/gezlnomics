@@ -11,6 +11,36 @@ import type {
   Transaction
 } from '../types/models';
 
+type PeriodeVindue = {
+  periodStart: string;
+  periodEnd: string;
+};
+
+function periodeNoegle(periodStart: string, periodEnd: string): string {
+  return `${periodStart}|${periodEnd}`;
+}
+
+function parseNoegle(noegle: string): PeriodeVindue | null {
+  const parts = noegle.split('|');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    return null;
+  }
+
+  return { periodStart: parts[0], periodEnd: parts[1] };
+}
+
+function addDays(isoDate: string, days: number): string {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function addMonths(isoDate: string, months: number): string {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  date.setUTCMonth(date.getUTCMonth() + months);
+  return date.toISOString().slice(0, 10);
+}
+
 export function useLedgerApp() {
   const [bruger, setBruger] = useState<AuthUser | null>(null);
   const [indlaeser, setIndlaeser] = useState(true);
@@ -21,6 +51,7 @@ export function useLedgerApp() {
   const [transaktioner, setTransaktioner] = useState<Transaction[]>([]);
   const [fasteUdgifter, setFasteUdgifter] = useState<RecurringRule[]>([]);
   const [startSaldo, setStartSaldo] = useState('0');
+  const [valgtPeriode, setValgtPeriode] = useState<PeriodeVindue | null>(null);
 
   const aktivPeriode = useMemo(() => {
     if (!summary) {
@@ -34,20 +65,68 @@ export function useLedgerApp() {
     );
   }, [summary, perioder]);
 
-  async function hentAlt() {
-    const [s, p, t, f] = await Promise.all([
+  const periodeValg = useMemo(() => {
+    const fraGemte = perioder
+      .map((p) => ({
+        key: periodeNoegle(p.periodStartDate, p.periodEndDate),
+        periodStart: p.periodStartDate,
+        periodEnd: p.periodEndDate,
+        label: `${p.periodStartDate} til ${p.periodEndDate}`
+      }))
+      .sort((a, b) => b.periodStart.localeCompare(a.periodStart));
+
+    if (!summary) {
+      return fraGemte;
+    }
+
+    const aktivKey = periodeNoegle(summary.periodStart, summary.periodEnd);
+    if (fraGemte.some((p) => p.key === aktivKey)) {
+      return fraGemte;
+    }
+
+    return [
+      {
+        key: aktivKey,
+        periodStart: summary.periodStart,
+        periodEnd: summary.periodEnd,
+        label: `${summary.periodStart} til ${summary.periodEnd} (nuværende)`
+      },
+      ...fraGemte
+    ];
+  }, [perioder, summary]);
+
+  async function hentAlt(foretrukken?: PeriodeVindue | null) {
+    const [nuvSummary, p, f] = await Promise.all([
       apiClient.ledger.summary(),
       apiClient.incomePeriods.list(),
-      apiClient.transactions.list(),
       apiClient.recurring.list()
     ]);
 
-    setSummary(s);
-    setPerioder(p);
-    setTransaktioner(t);
+    const sorteretPerioder = [...p].sort((a, b) => b.periodStartDate.localeCompare(a.periodStartDate));
+    setPerioder(sorteretPerioder);
     setFasteUdgifter(f);
 
-    const match = p.find((x) => x.periodStartDate === s.periodStart && x.periodEndDate === s.periodEnd);
+    const valgt =
+      foretrukken ??
+      valgtPeriode ??
+      {
+        periodStart: nuvSummary.periodStart,
+        periodEnd: nuvSummary.periodEnd
+      };
+
+    const iDag = new Date().toISOString().slice(0, 10);
+    const asOf = iDag < valgt.periodStart ? valgt.periodStart : iDag > valgt.periodEnd ? valgt.periodEnd : iDag;
+
+    const [s, t] = await Promise.all([
+      apiClient.ledger.summary(asOf),
+      apiClient.transactions.list({ from: valgt.periodStart, to: valgt.periodEnd })
+    ]);
+
+    setValgtPeriode({ periodStart: s.periodStart, periodEnd: s.periodEnd });
+    setSummary(s);
+    setTransaktioner(t);
+
+    const match = sorteretPerioder.find((x) => x.periodStartDate === s.periodStart && x.periodEndDate === s.periodEnd);
     setStartSaldo((match?.startingBalance ?? 0).toString());
   }
 
@@ -90,12 +169,16 @@ export function useLedgerApp() {
   }
 
   async function handleLogout() {
-    await apiClient.auth.logout();
-    setBruger(null);
-    setSummary(null);
-    setPerioder([]);
-    setTransaktioner([]);
-    setFasteUdgifter([]);
+    try {
+      await apiClient.auth.logout();
+    } finally {
+      setBruger(null);
+      setSummary(null);
+      setPerioder([]);
+      setTransaktioner([]);
+      setFasteUdgifter([]);
+      setValgtPeriode(null);
+    }
   }
 
   async function gemStartsaldo() {
@@ -138,6 +221,43 @@ export function useLedgerApp() {
     await opdater();
   }
 
+  async function vaelgPeriode(noegle: string) {
+    setFejl('');
+    const parsed = parseNoegle(noegle);
+    if (!parsed) {
+      return;
+    }
+
+    try {
+      await hentAlt(parsed);
+    } catch {
+      setFejl('Kunne ikke skifte periode.');
+    }
+  }
+
+  async function opretNaestePeriode() {
+    if (!summary) {
+      return;
+    }
+
+    setFejl('');
+
+    try {
+      const naesteStart = addDays(summary.periodEnd, 1);
+      const naesteSlut = addDays(addMonths(naesteStart, 1), -1);
+
+      await apiClient.incomePeriods.create({
+        periodStartDate: naesteStart,
+        periodEndDate: naesteSlut,
+        startingBalance: 0
+      });
+
+      await hentAlt({ periodStart: naesteStart, periodEnd: naesteSlut });
+    } catch {
+      setFejl('Kunne ikke oprette ny periode.');
+    }
+  }
+
   return {
     bruger,
     indlaeser,
@@ -146,14 +266,17 @@ export function useLedgerApp() {
     transaktioner,
     fasteUdgifter,
     startSaldo,
+    periodeValg,
+    valgtPeriodeNoegle: summary ? periodeNoegle(summary.periodStart, summary.periodEnd) : '',
     setStartSaldo,
     handleAuth,
     handleLogout,
-    opdater,
     gemStartsaldo,
     opretTransaktion,
     sletTransaktion,
     opretFastUdgift,
-    sletFastUdgift
+    sletFastUdgift,
+    vaelgPeriode,
+    opretNaestePeriode
   };
 }

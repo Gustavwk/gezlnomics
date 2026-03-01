@@ -36,6 +36,25 @@ make logs     # logs
 make down     # stop
 ```
 
+## PowerShell helper (Windows)
+For Windows kan du bruge et samlet script, der abstraherer compose-flow og typegenerering:
+
+```powershell
+.\scripts\dev.ps1 help
+.\scripts\dev.ps1 sync
+```
+
+Kommandoer:
+- `.\scripts\dev.ps1 config` - valider compose
+- `.\scripts\dev.ps1 up` - start stack (`--build -d`)
+- `.\scripts\dev.ps1 up -NoBuild` - start uden rebuild
+- `.\scripts\dev.ps1 down` - stop stack
+- `.\scripts\dev.ps1 ps` - status
+- `.\scripts\dev.ps1 logs` - foelg logs
+- `.\scripts\dev.ps1 rebuild` - no-cache build
+- `.\scripts\dev.ps1 types` - vent paa swagger + generer frontend-typer
+- `.\scripts\dev.ps1 sync` - config + up + swagger-wait + typegenerering
+
 ## Auth model
 MVP uses email/password with cookie-based auth.
 

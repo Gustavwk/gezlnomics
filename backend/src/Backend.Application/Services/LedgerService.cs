@@ -1,4 +1,4 @@
-using Backend.Application.Abstractions;
+﻿using Backend.Application.Abstractions;
 using Backend.Application.Models;
 using Backend.Domain;
 
@@ -43,10 +43,11 @@ public sealed class LedgerService : ILedgerService
             .Where(t => t.Status == TransactionStatus.Active && t.Date > asOf)
             .Sum(SignedAmount);
 
-        var recurringDelta = CalculateRecurringDelta(recurringRules, asOf.AddDays(1), periodEnd);
+        var recurringCurrentDelta = CalculateRecurringDelta(recurringRules, periodStart, asOf);
+        var recurringFutureDelta = CalculateRecurringDelta(recurringRules, asOf.AddDays(1), periodEnd);
 
-        var currentBalance = startingBalance + currentDelta;
-        var forecastBalance = currentBalance + futureDelta + recurringDelta;
+        var currentBalance = startingBalance + currentDelta + recurringCurrentDelta;
+        var forecastBalance = currentBalance + futureDelta + recurringFutureDelta;
         var daysUntilNextPayday = Math.Max(1, nextPayday.DayNumber - asOf.DayNumber);
         var moneyPerDay = Math.Round(Math.Max(0m, forecastBalance) / daysUntilNextPayday, 2, MidpointRounding.AwayFromZero);
 
@@ -58,6 +59,11 @@ public sealed class LedgerService : ILedgerService
                 _ => 0m
             });
 
+        var recurringSpending = Math.Abs(CalculateRecurringDelta(
+            recurringRules.Where(r => r.RuleKind is TransactionKind.ExpenseActual or TransactionKind.ExpensePlanned or TransactionKind.SavingsTransferOut).ToList(),
+            periodStart,
+            asOf));
+
         return new LedgerSummaryDto(
             periodStart,
             periodEnd,
@@ -66,7 +72,7 @@ public sealed class LedgerService : ILedgerService
             forecastBalance,
             daysUntilNextPayday,
             moneyPerDay,
-            cumulativeSpending,
+            cumulativeSpending + recurringSpending,
             settings.CurrencyCode
         );
     }
@@ -75,7 +81,7 @@ public sealed class LedgerService : ILedgerService
     {
         if (to < from)
         {
-            throw new InvalidOperationException("to skal v�re efter from.");
+            throw new InvalidOperationException("to skal være efter from.");
         }
 
         var points = new List<LedgerTimelinePointDto>();

@@ -10,6 +10,22 @@ import type {
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string;
 
+function withQuery(path: string, query?: Record<string, string | undefined>): string {
+  if (!query) {
+    return path;
+  }
+
+  const params = new URLSearchParams();
+  Object.entries(query).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    }
+  });
+
+  const queryString = params.toString();
+  return queryString ? `${path}?${queryString}` : path;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
@@ -47,7 +63,7 @@ export const apiClient = {
     logout: () => request<void>('/api/auth/logout', { method: 'POST' })
   },
   ledger: {
-    summary: () => request<LedgerSummary>('/api/ledger/summary')
+    summary: (asOf?: string) => request<LedgerSummary>(withQuery('/api/ledger/summary', { asOf }))
   },
   incomePeriods: {
     list: () => request<IncomePeriod[]>('/api/income-periods/'),
@@ -63,7 +79,8 @@ export const apiClient = {
       })
   },
   transactions: {
-    list: () => request<Transaction[]>('/api/transactions/'),
+    list: (query?: { from?: string; to?: string }) =>
+      request<Transaction[]>(withQuery('/api/transactions/', query)),
     create: (payload: CreateTransactionPayload) =>
       request<Transaction>('/api/transactions/', {
         method: 'POST',

@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+﻿import { FormEvent, useState } from 'react';
 import type { AuthMode } from '../../types/models';
 
 type Props = {
@@ -18,9 +18,9 @@ export function AuthPanel({ fejl, onSubmit }: Props) {
   }
 
   return (
-    <section className="panel">
+    <section className="panel auth-panel">
       <h1>Gezlnomics</h1>
-      <p>Log ind for at se din lønperiode og dine udgifter.</p>
+      <p>Log ind for at fortsætte.</p>
 
       <div className="row tabs">
         <button className={authMode === 'login' ? 'active' : ''} onClick={() => setAuthMode('login')}>
@@ -31,7 +31,7 @@ export function AuthPanel({ fejl, onSubmit }: Props) {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid to">
+      <form onSubmit={handleSubmit} className="grid auth-form">
         <label>
           E-mail
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />

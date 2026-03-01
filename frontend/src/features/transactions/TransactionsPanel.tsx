@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+﻿import { FormEvent, useState } from 'react';
 import { transaktionstyper } from '../../constants/labels';
 import type { CreateTransactionPayload, Transaction } from '../../types/models';
 
@@ -32,14 +32,10 @@ export function TransactionsPanel({ transaktioner, onCreate, onDelete }: Props) 
   return (
     <section className="panel">
       <h2>Transaktioner</h2>
-      <form onSubmit={handleSubmit} className="grid fire">
+      <form onSubmit={handleSubmit} className="grid fire transaction-form">
         <label>
           Dato
           <input type="date" value={txDato} onChange={(e) => setTxDato(e.target.value)} required />
-        </label>
-        <label>
-          Beløb
-          <input type="number" step="0.01" value={txBelob} onChange={(e) => setTxBelob(e.target.value)} required />
         </label>
         <label>
           Kategori
@@ -55,11 +51,15 @@ export function TransactionsPanel({ transaktioner, onCreate, onDelete }: Props) 
             ))}
           </select>
         </label>
-        <label className="span-3">
+        <label>
           Note
           <input value={txNote} onChange={(e) => setTxNote(e.target.value)} />
         </label>
-        <button type="submit">Tilføj transaktion</button>
+        <label className="span-3">
+          Beløb
+          <input type="number" step="0.01" value={txBelob} onChange={(e) => setTxBelob(e.target.value)} required />
+        </label>
+        <button type="submit" className="align-end">Tilføj transaktion</button>
       </form>
 
       <ul className="liste">
