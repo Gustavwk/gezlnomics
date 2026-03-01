@@ -1,4 +1,4 @@
-import { MoneyPerDayThreshold } from '../../constants/kpi';
+﻿import { MoneyPerDayThreshold } from '../../constants/kpi';
 import type { LedgerSummary } from '../../types/models';
 
 type Props = {

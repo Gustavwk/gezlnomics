@@ -1,4 +1,4 @@
-import { FormEvent } from 'react';
+﻿import { FormEvent } from 'react';
 
 type Props = {
   periodStart: string;
@@ -47,7 +47,7 @@ export function LedgerPeriodPanel({
               ))}
             </select>
           </label>
-          <button type="button" className="align-end btn-small" onClick={() => void onOpretNaestePeriode()}>
+          <button type="button" className="align-end ledger-form-btn" onClick={() => void onOpretNaestePeriode()}>
             Opret næste periode
           </button>
         </div>
@@ -63,7 +63,7 @@ export function LedgerPeriodPanel({
               required
             />
           </label>
-          <button type="submit" className="align-end btn-small">Gem startsaldo</button>
+          <button type="submit" className="align-end ledger-form-btn">Gem startsaldo</button>
         </form>
       </div>
     </section>

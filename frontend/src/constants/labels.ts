@@ -1,4 +1,4 @@
-export const transaktionstyper: Record<number, string> = {
+﻿export const transaktionstyper: Record<number, string> = {
   0: 'Udgift (faktisk)',
   1: 'Udgift (planlagt)',
   2: 'Overførsel til opsparing',

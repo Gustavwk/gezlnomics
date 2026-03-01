@@ -54,7 +54,7 @@ export function FasteUdgifterPanel({ fasteUdgifter, onCreate, onDelete }: Props)
             <input value={fastTitel} onChange={(e) => setFastTitel(e.target.value)} required />
           </label>
           <label>
-            Beløb
+            BelÃ¸b
             <input type="number" step="0.01" value={fastBelob} onChange={(e) => setFastBelob(e.target.value)} required />
           </label>
           <label>
@@ -82,12 +82,12 @@ export function FasteUdgifterPanel({ fasteUdgifter, onCreate, onDelete }: Props)
           <input value={fastNote} onChange={(e) => setFastNote(e.target.value)} />
         </label>
 
-        <button type="submit" className="recurring-submit">Tilføj fast udgift</button>
+        <button type="submit" className="recurring-submit">TilfÃ¸j fast udgift</button>
       </form>
 
       <div className="liste-toolbar">
         <div className="liste-summary">
-          <strong>{antalFasteUdgifter}</strong> poster • <strong>{samletFastBeloeb.toFixed(2)}</strong> i alt
+          <strong>{antalFasteUdgifter}</strong> poster - <strong>{samletFastBeloeb.toFixed(2)}</strong> i alt
         </div>
         <button type="button" className="btn-small" onClick={() => setVisListe((prev) => !prev)}>
           {visListe ? 'Skjul faste udgifter' : 'Vis faste udgifter'}
@@ -99,7 +99,7 @@ export function FasteUdgifterPanel({ fasteUdgifter, onCreate, onDelete }: Props)
           {fasteUdgifter.map((f) => (
             <li key={f.id} className="row mellem recurring-item">
               <span className="recurring-item-main">{f.title}</span>
-              <span className="recurring-item-meta">{frekvenser[f.frequency]} • {f.amount.toFixed(2)}</span>
+              <span className="recurring-item-meta">{frekvenser[f.frequency]} - {f.amount.toFixed(2)}</span>
               <button onClick={() => onDelete(f.id)}>Slet</button>
             </li>
           ))}

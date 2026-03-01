@@ -124,14 +124,14 @@ body {
 
 .startsaldo-form {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   align-items: end;
 }
 
 .periode-toolbar {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   align-items: end;
 }
@@ -150,6 +150,13 @@ body {
   padding: 8px 12px;
   font-size: 12px;
   white-space: nowrap;
+}
+
+.ledger-form-btn {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  font-size: 14px;
 }
 
 .auth-panel {
