@@ -1,4 +1,4 @@
-# Gezlnomics
+﻿# Gezlnomics
 
 Containerized full-stack app for a manual "true ledger":
 - register period starting balance (salary after tax)
@@ -6,30 +6,10 @@ Containerized full-stack app for a manual "true ledger":
 - add recurring rules
 - track current balance, forecast balance, and money-per-day KPIs
 
-## Hvad kan appen bruges til?
-Gezlnomics er en personlig budget- og likviditetsapp til dig, der vil have et simpelt overblik over din måned uden bankintegration.
-
-Du kan bruge den til at:
-- oprette bruger og logge ind
-- sætte startsaldo for lønperioder
-- registrere daglige udgifter/transaktioner med note
-- oprette faste udgifter (tilbagevendende poster)
-- skifte mellem perioder og oprette næste periode
-- se KPI-overblik:
-  - nuværende saldo
-  - penge pr. dag (før dagens forbrug)
-  - penge pr. dag fremadrettet
-  - forbrug i dag (uden faste udgifter)
-  - dage til næste løn
-
-Den er især nyttig til:
-- daglig styring af rådighedsbeløb
-- at undgå at bruge for meget tidligt i perioden
-- at forstå forskellen mellem faktiske udgifter og faste planlagte udgifter
-
 ## Stack
+- `traefik` (reverse proxy / single public entrypoint)
 - `postgres` (database)
-- `backend` (.NET 8 minimal API + EF Core)
+- `backend` (.NET 8 API + EF Core)
 - `frontend` (React/Vite built and served by Nginx)
 
 ## Local Development
@@ -46,10 +26,9 @@ Den er især nyttig til:
    docker compose up --build -d
    ```
 3. Open:
-   - Frontend: `http://localhost:3000`
-   - API health (legacy): `http://localhost:8080/health`
-   - API liveness: `http://localhost:8080/health/live`
-   - API readiness: `http://localhost:8080/health/ready`
+   - App via Traefik: `http://localhost:3000`
+   - API liveness via proxy: `http://localhost:3000/health/live`
+   - API readiness via proxy: `http://localhost:3000/health/ready`
 
 ## Default commands
 ```bash
@@ -59,42 +38,52 @@ make logs     # logs
 make down     # stop
 ```
 
-## PowerShell helper (Windows)
-```powershell
-.\scripts\dev.ps1 help
-.\scripts\dev.ps1 sync
-```
+## Environment variables
+Core:
+- `ASPNETCORE_ENVIRONMENT` (`Development` / `Production`)
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DB`
+- `POSTGRES_PORT`
+- `TRAEFIK_HTTP_PORT` (public HTTP port for app)
+- `API_PORT` (legacy direct backend port, useful during local transition/debug)
+- `FRONTEND_ORIGIN` (must match public app origin)
+- `VITE_API_BASE_URL` (keep empty when frontend+api share origin via Traefik)
 
-Commands:
-- `config` - validate compose
-- `up` - start stack (`--build -d`)
-- `up -NoBuild` - start without rebuild
-- `down` - stop stack
-- `ps` - status
-- `logs` - tail logs
-- `rebuild` - no-cache build
-- `types` - wait for swagger + generate frontend types
-- `sync` - config + up + swagger wait + type generation
+Auth abuse protection:
+- `RATE_LIMIT_AUTH_LOGIN_PERMIT_LIMIT`
+- `RATE_LIMIT_AUTH_LOGIN_WINDOW_SECONDS`
+- `RATE_LIMIT_AUTH_SIGNUP_PERMIT_LIMIT`
+- `RATE_LIMIT_AUTH_SIGNUP_WINDOW_SECONDS`
 
-## Production Baseline
-Use the same containers, but configure production values:
+## Production baseline
+Use production values and terminate TLS in front of Traefik or directly in Traefik:
 - `ASPNETCORE_ENVIRONMENT=Production`
-- `FRONTEND_ORIGIN=https://<your-frontend-domain>`
-- secure secrets for DB credentials
-- HTTPS termination in front of backend/frontend
+- `FRONTEND_ORIGIN=https://<your-domain>`
+- strong DB credentials via secret store
+- HTTPS in front of all auth/session traffic
 
 Important production behavior in backend:
 - cookie `SecurePolicy=Always` in production
 - CORS requires explicit `Frontend:Origin` in production
-- Swagger UI only in `Development`
+- auth endpoints are rate-limited per client IP
 - readiness endpoint (`/health/ready`) verifies DB connectivity
 
-## Auth model
-MVP uses email/password with cookie-based auth.
+## GDPR baseline (technical)
+Current app supports key data-subject rights:
+- data export: `GET /api/account/export`
+- account/data deletion: `DELETE /api/account/`
+
+Before go-live, ensure:
+- privacy notice + lawful basis documented
+- data retention policy defined (incl. backups)
+- data processing agreement with hosting/providers
+- incident/breach response process documented
+- access control to logs/backups and rotation of secrets
 
 ## OpenAPI + frontend types
 - Backend exposes Swagger/OpenAPI in `Development`.
-- OpenAPI JSON: `http://localhost:8080/swagger/v1/swagger.json`
+- OpenAPI JSON: `http://localhost:3000/swagger/v1/swagger.json` (via Traefik)
 - Frontend types are generated from OpenAPI and committed.
 
 Run in `frontend`:
@@ -109,40 +98,12 @@ Workflow for API changes:
 3. Commit backend changes + updated `src/generated/api-types.ts`.
 
 ## CI Gates
-Repository CI now validates:
+Repository CI validates:
 - backend restore/build/test
 - frontend install/build
 - `docker compose config`
-- generated frontend API types (separate workflow)
+- generated frontend API types
 
-## Core API
-Settings:
-- `GET /api/settings/`
-- `PUT /api/settings/`
-
-Income periods:
-- `GET /api/income-periods/`
-- `POST /api/income-periods/`
-- `PUT /api/income-periods/{id}`
-- `DELETE /api/income-periods/{id}`
-
-Transactions:
-- `GET /api/transactions/`
-- `POST /api/transactions/`
-- `PUT /api/transactions/{id}`
-- `DELETE /api/transactions/{id}`
-
-Recurring rules:
-- `GET /api/recurring-rules/`
-- `POST /api/recurring-rules/`
-- `PUT /api/recurring-rules/{id}`
-- `DELETE /api/recurring-rules/{id}`
-
-Ledger:
-- `GET /api/ledger/summary?asOf=YYYY-MM-DD`
-- `GET /api/ledger/timeline?from=YYYY-MM-DD&to=YYYY-MM-DD`
-
-## Release Runbook
+## Release runbook
 See:
 - `docs/release-runbook.md`
-

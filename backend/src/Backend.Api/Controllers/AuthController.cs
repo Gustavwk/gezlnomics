@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Backend.Application.Abstractions;
 using Backend.Application.Models;
 using Backend.Application.Services;
@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Backend.Api.Controllers;
 
@@ -13,6 +14,7 @@ namespace Backend.Api.Controllers;
 [Route("api/auth")]
 public sealed class AuthController : ControllerBase
 {
+    [EnableRateLimiting("AuthSignup")]
     [HttpPost("signup")]
     public async Task<IActionResult> Signup([FromBody] SignupRequest request, [FromServices] IAuthService authService, CancellationToken cancellationToken)
     {
@@ -28,6 +30,7 @@ public sealed class AuthController : ControllerBase
         }
     }
 
+    [EnableRateLimiting("AuthLogin")]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, [FromServices] IAuthService authService, CancellationToken cancellationToken)
     {
