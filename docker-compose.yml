@@ -30,8 +30,6 @@
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -52,11 +50,12 @@
       RateLimiting__AuthLogin__WindowSeconds: ${RATE_LIMIT_AUTH_LOGIN_WINDOW_SECONDS:-60}
       RateLimiting__AuthSignup__PermitLimit: ${RATE_LIMIT_AUTH_SIGNUP_PERMIT_LIMIT:-3}
       RateLimiting__AuthSignup__WindowSeconds: ${RATE_LIMIT_AUTH_SIGNUP_WINDOW_SECONDS:-300}
+      LoginSecurity__MaxFailedAttempts: ${LOGIN_SECURITY_MAX_FAILED_ATTEMPTS:-5}
+      LoginSecurity__AttemptWindowSeconds: ${LOGIN_SECURITY_ATTEMPT_WINDOW_SECONDS:-600}
+      LoginSecurity__LockoutDurationSeconds: ${LOGIN_SECURITY_LOCKOUT_DURATION_SECONDS:-900}
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "${API_PORT:-8080}:8080"
     healthcheck:
       test: ["CMD-SHELL", "curl --fail http://localhost:8080/health/ready || exit 1"]
       interval: 5s

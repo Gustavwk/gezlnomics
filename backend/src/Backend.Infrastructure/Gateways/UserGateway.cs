@@ -14,8 +14,8 @@ public sealed class UserGateway : IUserGateway
         _dbContext = dbContext;
     }
 
-    public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken) =>
-        _dbContext.Users.FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
+    public Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken) =>
+        _dbContext.Users.FirstOrDefaultAsync(x => x.Username == username, cancellationToken);
 
     public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         _dbContext.Users.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);

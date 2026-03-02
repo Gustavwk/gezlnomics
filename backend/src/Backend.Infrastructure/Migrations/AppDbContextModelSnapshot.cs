@@ -165,10 +165,10 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
             b.Property<DateTime>("CreatedAt")
                 .HasColumnType("timestamp with time zone");
 
-            b.Property<string>("Email")
+            b.Property<string>("Username")
                 .IsRequired()
-                .HasMaxLength(320)
-                .HasColumnType("character varying(320)");
+                .HasMaxLength(32)
+                .HasColumnType("character varying(32)");
 
             b.Property<string>("PasswordHash")
                 .IsRequired()
@@ -180,7 +180,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
 
             b.HasKey("Id");
 
-            b.HasIndex("Email")
+            b.HasIndex("Username")
                 .IsUnique();
 
             b.ToTable("Users");

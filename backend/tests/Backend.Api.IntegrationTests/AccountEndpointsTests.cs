@@ -88,11 +88,11 @@ public sealed class AccountEndpointsTests : IClassFixture<TestWebApplicationFact
         Assert.Equal("A Rule", recurringTitle);
     }
 
-    private void SeedUserGraph(Guid userId, string emailPrefix)
+    private void SeedUserGraph(Guid userId, string usernamePrefix)
     {
         var now = DateTime.UtcNow;
-        var isA = emailPrefix.StartsWith("a", StringComparison.OrdinalIgnoreCase);
-        _factory.Store.Users.Add(new User { Id = userId, Email = emailPrefix, PasswordHash = "hash", CreatedAt = now, UpdatedAt = now });
+        var isA = usernamePrefix.StartsWith("a", StringComparison.OrdinalIgnoreCase);
+        _factory.Store.Users.Add(new User { Id = userId, Username = usernamePrefix, PasswordHash = "hash", CreatedAt = now, UpdatedAt = now });
         _factory.Store.Settings.Add(new UserSettings
         {
             UserId = userId,

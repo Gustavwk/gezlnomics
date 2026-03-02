@@ -21,23 +21,28 @@ public sealed class AuthService : IAuthService
 
     public async Task<AuthUserDto> SignupAsync(SignupRequest request, CancellationToken cancellationToken)
     {
-        var email = request.Email.Trim().ToLowerInvariant();
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
+        var username = (request.Username ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(username) || username.Length < 3 || username.Length > 32 || string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
         {
-            throw new InvalidOperationException("Email og password er ugyldige.");
+            throw new InvalidOperationException("Brugernavn og password er ugyldige.");
         }
 
-        var existing = await _userGateway.GetByEmailAsync(email, cancellationToken);
+        if (!username.All(c => char.IsLetterOrDigit(c) || c == '.' || c == '_' || c == '-'))
+        {
+            throw new InvalidOperationException("Brugernavn må kun indeholde bogstaver, tal, '.', '_' og '-'.");
+        }
+
+        var existing = await _userGateway.GetByUsernameAsync(username, cancellationToken);
         if (existing is not null)
         {
-            throw new InvalidOperationException("Email findes allerede.");
+            throw new InvalidOperationException("Brugernavn findes allerede.");
         }
 
         var now = DateTime.UtcNow;
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Email = email,
+            Username = username,
             PasswordHash = _passwordHasher.HashPassword(request.Password),
             CreatedAt = now,
             UpdatedAt = now
@@ -53,13 +58,13 @@ public sealed class AuthService : IAuthService
             UpdatedAt = now
         }, cancellationToken);
 
-        return new AuthUserDto(user.Id, user.Email);
+        return new AuthUserDto(user.Id, user.Username);
     }
 
     public async Task<AuthUserDto?> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
     {
-        var email = request.Email.Trim().ToLowerInvariant();
-        var user = await _userGateway.GetByEmailAsync(email, cancellationToken);
+        var username = (request.Username ?? string.Empty).Trim().ToLowerInvariant();
+        var user = await _userGateway.GetByUsernameAsync(username, cancellationToken);
         if (user is null)
         {
             return null;
@@ -70,12 +75,12 @@ public sealed class AuthService : IAuthService
             return null;
         }
 
-        return new AuthUserDto(user.Id, user.Email);
+        return new AuthUserDto(user.Id, user.Username);
     }
 
     public async Task<AuthUserDto?> GetCurrentUserAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await _userGateway.GetByIdAsync(userId, cancellationToken);
-        return user is null ? null : new AuthUserDto(user.Id, user.Email);
+        return user is null ? null : new AuthUserDto(user.Id, user.Username);
     }
 }

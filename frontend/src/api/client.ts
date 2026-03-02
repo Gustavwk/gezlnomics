@@ -50,15 +50,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const apiClient = {
   auth: {
     me: () => request<AuthUser>('/api/auth/me'),
-    login: (email: string, password: string) =>
+    login: (username: string, password: string) =>
       request<AuthUser>('/api/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ username, password })
       }),
-    signup: (email: string, password: string) =>
+    signup: (username: string, password: string) =>
       request<AuthUser>('/api/auth/signup', {
         method: 'POST',
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ username, password })
       }),
     logout: () => request<void>('/api/auth/logout', { method: 'POST' })
   },

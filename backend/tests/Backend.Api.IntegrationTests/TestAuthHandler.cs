@@ -29,7 +29,7 @@ internal sealed class TestAuthHandler : AuthenticationHandler<AuthenticationSche
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-            new Claim(ClaimTypes.Email, $"{userId}@test.local")
+            new Claim(ClaimTypes.Name, $"user_{userId:N}")
         };
         var identity = new ClaimsIdentity(claims, SchemeName);
         var principal = new ClaimsPrincipal(identity);

@@ -126,6 +126,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseHsts();
+}
 
 app.UseForwardedHeaders();
 app.UseCors("Frontend");

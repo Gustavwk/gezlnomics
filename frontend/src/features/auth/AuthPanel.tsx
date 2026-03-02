@@ -3,17 +3,17 @@ import type { AuthMode } from '../../types/models';
 
 type Props = {
   fejl: string;
-  onSubmit: (mode: AuthMode, email: string, password: string) => Promise<void>;
+  onSubmit: (mode: AuthMode, username: string, password: string) => Promise<void>;
 };
 
 export function AuthPanel({ fejl, onSubmit }: Props) {
   const [authMode, setAuthMode] = useState<AuthMode>('login');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    await onSubmit(authMode, email, password);
+    await onSubmit(authMode, username, password);
     setPassword('');
   }
 
@@ -33,8 +33,16 @@ export function AuthPanel({ fejl, onSubmit }: Props) {
 
       <form onSubmit={handleSubmit} className="grid auth-form">
         <label>
-          E-mail
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          Brugernavn
+          <input
+            type="text"
+            minLength={3}
+            maxLength={32}
+            pattern="[A-Za-z0-9._-]+"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
         </label>
         <label>
           Adgangskode

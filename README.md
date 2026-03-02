@@ -7,103 +7,97 @@ Containerized full-stack app for a manual "true ledger":
 - track current balance, forecast balance, and money-per-day KPIs
 
 ## Stack
-- `traefik` (reverse proxy / single public entrypoint)
+- `traefik` (reverse proxy)
 - `postgres` (database)
 - `backend` (.NET 8 API + EF Core)
 - `frontend` (React/Vite built and served by Nginx)
 
-## Local Development
+## Local development
 1. Copy env file:
    ```bash
    cp .env.example .env
    ```
-2. Start everything:
+2. Start stack:
    ```bash
    make up
    ```
-   or:
-   ```bash
-   docker compose up --build -d
-   ```
 3. Open:
-   - App via Traefik: `http://localhost:3000`
-   - API liveness via proxy: `http://localhost:3000/health/live`
-   - API readiness via proxy: `http://localhost:3000/health/ready`
+   - App: `http://localhost:3000`
+   - Liveness: `http://localhost:3000/health/live`
+   - Readiness: `http://localhost:3000/health/ready`
 
 ## Default commands
 ```bash
-make config   # validate compose
-make ps       # status
-make logs     # logs
-make down     # stop
+make config
+make up
+make down
+make logs
+make ps
 ```
+
+## Production deploy (single droplet)
+Use compose overrides and production env file:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production up --build -d
+```
+
+Production files:
+- `.env.production.example` (template)
+- `docker-compose.prod.yml` (HTTPS + ACME + closed internal ports)
+- `docker-compose.override.yml` (dev-only direct port bindings for backend/postgres)
 
 ## Environment variables
 Core:
-- `ASPNETCORE_ENVIRONMENT` (`Development` / `Production`)
+- `ASPNETCORE_ENVIRONMENT`
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
 - `POSTGRES_DB`
-- `POSTGRES_PORT`
-- `TRAEFIK_HTTP_PORT` (public HTTP port for app)
-- `API_PORT` (legacy direct backend port, useful during local transition/debug)
-- `FRONTEND_ORIGIN` (must match public app origin)
-- `VITE_API_BASE_URL` (keep empty when frontend+api share origin via Traefik)
+- `POSTGRES_PORT` (dev convenience)
+- `TRAEFIK_HTTP_PORT` (dev convenience)
+- `API_PORT` (legacy dev/debug convenience)
+- `FRONTEND_ORIGIN`
+- `VITE_API_BASE_URL`
+
+Production-only:
+- `APP_HOST`
+- `ACME_EMAIL`
 
 Auth abuse protection:
 - `RATE_LIMIT_AUTH_LOGIN_PERMIT_LIMIT`
 - `RATE_LIMIT_AUTH_LOGIN_WINDOW_SECONDS`
 - `RATE_LIMIT_AUTH_SIGNUP_PERMIT_LIMIT`
 - `RATE_LIMIT_AUTH_SIGNUP_WINDOW_SECONDS`
+- `LOGIN_SECURITY_MAX_FAILED_ATTEMPTS`
+- `LOGIN_SECURITY_ATTEMPT_WINDOW_SECONDS`
+- `LOGIN_SECURITY_LOCKOUT_DURATION_SECONDS`
 
-## Production baseline
-Use production values and terminate TLS in front of Traefik or directly in Traefik:
-- `ASPNETCORE_ENVIRONMENT=Production`
-- `FRONTEND_ORIGIN=https://<your-domain>`
-- strong DB credentials via secret store
-- HTTPS in front of all auth/session traffic
-
-Important production behavior in backend:
-- cookie `SecurePolicy=Always` in production
-- CORS requires explicit `Frontend:Origin` in production
-- auth endpoints are rate-limited per client IP
-- readiness endpoint (`/health/ready`) verifies DB connectivity
-
-## GDPR baseline (technical)
-Current app supports key data-subject rights:
-- data export: `GET /api/account/export`
-- account/data deletion: `DELETE /api/account/`
-
-Before go-live, ensure:
-- privacy notice + lawful basis documented
-- data retention policy defined (incl. backups)
-- data processing agreement with hosting/providers
-- incident/breach response process documented
-- access control to logs/backups and rotation of secrets
+## Auth model
+- Username + password (no email required).
+- Cookie-based auth session.
+- Login/signup rate-limited by IP.
+- Additional lockout on repeated failed login attempts (username + IP).
 
 ## OpenAPI + frontend types
-- Backend exposes Swagger/OpenAPI in `Development`.
-- OpenAPI JSON: `http://localhost:3000/swagger/v1/swagger.json` (via Traefik)
-- Frontend types are generated from OpenAPI and committed.
+- OpenAPI JSON (dev): `http://localhost:3000/swagger/v1/swagger.json`
+- Generate frontend types:
+  ```bash
+  cd frontend
+  npm run types:generate
+  npm run types:check
+  ```
 
-Run in `frontend`:
-```bash
-npm run types:generate
-npm run types:check
-```
+## Backup + restore helpers
+- Backup:
+  ```bash
+  ./scripts/backup-postgres.sh
+  ```
+- Restore:
+  ```bash
+  ./scripts/restore-postgres.sh ./backups/<file>.sql.gz
+  ```
 
-Workflow for API changes:
-1. Start backend in development.
-2. Run `npm run types:generate` in frontend.
-3. Commit backend changes + updated `src/generated/api-types.ts`.
-
-## CI Gates
-Repository CI validates:
-- backend restore/build/test
-- frontend install/build
-- `docker compose config`
-- generated frontend API types
-
-## Release runbook
-See:
+## GDPR / legal ops docs
 - `docs/release-runbook.md`
+- `docs/gdpr-operations-checklist.md`
+- `docs/privacy-notice-template.md`
+- `docs/incident-response-playbook.md`

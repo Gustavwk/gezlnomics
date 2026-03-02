@@ -19,14 +19,14 @@ jobs:
         with:
           node-version: 20
 
-      - name: Start backend stack
-        run: docker compose up -d postgres backend
+      - name: Start stack
+        run: docker compose up -d postgres backend frontend traefik
 
       - name: Wait for swagger
         shell: bash
         run: |
           for i in {1..60}; do
-            if curl -fsS http://localhost:8080/swagger/v1/swagger.json >/dev/null; then
+            if curl -fsS http://localhost:3000/swagger/v1/swagger.json >/dev/null; then
               echo "Swagger is ready"
               exit 0
             fi
