@@ -1,4 +1,4 @@
-name: Frontend Types Check
+﻿name: Frontend Types Check
 
 on:
   pull_request:
@@ -13,6 +13,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Prepare .env
+        run: cp .env.example .env
 
       - name: Setup Node
         uses: actions/setup-node@v4
