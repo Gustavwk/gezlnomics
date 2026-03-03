@@ -1,4 +1,4 @@
-name: Frontend Types Check
+﻿name: Frontend Types Check
 
 on:
   pull_request:
@@ -14,19 +14,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare .env
+        run: cp .env.example .env
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Start backend stack
-        run: docker compose up -d postgres backend
+      - name: Start stack
+        run: docker compose up -d postgres backend frontend traefik
 
       - name: Wait for swagger
         shell: bash
         run: |
           for i in {1..60}; do
-            if curl -fsS http://localhost:8080/swagger/v1/swagger.json >/dev/null; then
+            if curl -fsS http://localhost:3000/swagger/v1/swagger.json >/dev/null; then
               echo "Swagger is ready"
               exit 0
             fi

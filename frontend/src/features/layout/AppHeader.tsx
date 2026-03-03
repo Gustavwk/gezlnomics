@@ -10,7 +10,7 @@ export function AppHeader({ bruger, onLogout }: Props) {
     <header className="panel row mellem">
       <div>
         <h1>Gezlnomics</h1>
-        <p>Logget ind som {bruger.email}</p>
+        <p>Logget ind som {bruger.username}</p>
       </div>
       <div className="row">
         <button onClick={onLogout}>Log ud</button>

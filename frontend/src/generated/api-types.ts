@@ -835,7 +835,7 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         LoginRequest: {
-            email?: string | null;
+            username?: string | null;
             password?: string | null;
         };
         /**
@@ -844,7 +844,7 @@ export interface components {
          */
         RecurringFrequency: 0 | 1 | 2;
         SignupRequest: {
-            email?: string | null;
+            username?: string | null;
             password?: string | null;
         };
         /**

@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Backend.Application.Abstractions;
 using Backend.Application.Models;
 using Backend.Application.Services;
@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Backend.Api.Controllers;
 
@@ -13,6 +14,7 @@ namespace Backend.Api.Controllers;
 [Route("api/auth")]
 public sealed class AuthController : ControllerBase
 {
+    [EnableRateLimiting("AuthSignup")]
     [HttpPost("signup")]
     public async Task<IActionResult> Signup([FromBody] SignupRequest request, [FromServices] IAuthService authService, CancellationToken cancellationToken)
     {
@@ -28,15 +30,27 @@ public sealed class AuthController : ControllerBase
         }
     }
 
+    [EnableRateLimiting("AuthLogin")]
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request, [FromServices] IAuthService authService, CancellationToken cancellationToken)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request, [FromServices] IAuthService authService, [FromServices] ILoginAttemptGuard loginAttemptGuard, CancellationToken cancellationToken)
     {
+        var normalizedUsername = (request.Username ?? string.Empty).Trim().ToLowerInvariant();
+        var remoteIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        if (loginAttemptGuard.IsLocked(normalizedUsername, remoteIp, DateTime.UtcNow, out var lockedUntilUtc))
+        {
+            var retryAfter = Math.Max(1, (int)(lockedUntilUtc - DateTime.UtcNow).TotalSeconds);
+            HttpContext.Response.Headers.RetryAfter = retryAfter.ToString();
+            return StatusCode(StatusCodes.Status429TooManyRequests, new { message = "For mange loginforsøg. Prøv igen senere." });
+        }
+
         var user = await authService.LoginAsync(request, cancellationToken);
         if (user is null)
         {
+            loginAttemptGuard.RegisterFailure(normalizedUsername, remoteIp, DateTime.UtcNow);
             return Unauthorized();
         }
 
+        loginAttemptGuard.RegisterSuccess(normalizedUsername, remoteIp);
         await SignInAsync(user);
         return Ok(user);
     }
@@ -67,7 +81,7 @@ public sealed class AuthController : ControllerBase
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email)
+            new(ClaimTypes.Name, user.Username)
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

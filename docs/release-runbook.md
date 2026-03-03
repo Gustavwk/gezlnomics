@@ -1,60 +1,51 @@
-# Release Runbook (MVP)
+﻿# Release Runbook
 
 ## Preconditions
-- CI is green on the commit to deploy.
-- Docker images are built from that commit.
-- `.env` / secret store contains production values.
-- Latest DB backup completed successfully.
+- CI green on target commit.
+- Production `.env.production` prepared from `.env.production.example`.
+- DNS `A` record for `APP_HOST` points to droplet.
+- Latest backup and restore test completed.
 
 ## Required production configuration
 - `ASPNETCORE_ENVIRONMENT=Production`
-- `FRONTEND_ORIGIN=https://<frontend-domain>`
-- DB credentials via secrets
-- `VITE_API_BASE_URL=https://<api-domain>`
+- `APP_HOST=<domain>`
+- `ACME_EMAIL=<ops-email>`
+- `FRONTEND_ORIGIN=https://<domain>`
+- Strong DB credentials (no defaults).
 
-## Deploy steps
+## Deploy
 1. Validate config:
-   - `docker compose config`
-2. Pull/build target images.
-3. Start stack:
-   - `docker compose up --build -d`
-4. Verify health:
-   - `GET /health/live` returns 200
-   - `GET /health/ready` returns 200
-5. Verify functional smoke:
-   - login/signup
-   - create transaction
-   - open ledger summary
+   - `docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production config`
+2. Start/upgrade:
+   - `docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production up --build -d`
+3. Verify:
+   - `GET https://<domain>/health/live` = 200
+   - `GET https://<domain>/health/ready` = 200
+   - Signup/login/logout with username
 
-## Rollback steps
-1. Switch to previous known-good image tags.
-2. `docker compose up -d` with previous tags.
-3. Verify `live` and `ready` endpoints.
-4. Confirm app smoke flows.
+## Security checklist
+- HTTPS certificate issued and auto-renewing.
+- Only ports 22/80/443 open on host firewall.
+- Postgres and backend are not exposed publicly.
+- Secrets rotated from development defaults.
+- Rate limits + login lockout active.
+
+## GDPR checklist
+- Privacy notice published.
+- Data retention policy set (db, logs, backups).
+- DPA signed with DigitalOcean and other processors.
+- Data subject operations tested:
+  - `GET /api/account/export`
+  - `DELETE /api/account/`
+- Incident response process documented.
 
 ## Incident first response
-1. Check container status:
-   - `docker compose ps`
-2. Inspect logs:
-   - `docker compose logs --tail=200 backend frontend postgres`
-3. If DB connectivity fails:
-   - verify DB credentials/host/network
-   - confirm Postgres health
-4. If startup migration fails:
-   - halt rollout
-   - restore previous image
+1. `docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production ps`
+2. `docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production logs --tail=200 traefik backend frontend postgres`
+3. Contain (rotate secrets, block patterns, rollback if needed).
+4. Assess breach obligations and notify when required.
 
-## Backup and restore checklist
-- Daily backup schedule enabled.
-- Retention policy defined.
-- Restore tested in non-production environment.
-- Restore test date documented.
-
-## Go-live checklist
-- [ ] CI green
-- [ ] Compose config valid
-- [ ] Production env vars/secrets set
-- [ ] Health endpoints green
-- [ ] Smoke tests green
-- [ ] Backup recent and restore-tested
-- [ ] Rollback command path verified
+## Rollback
+1. Redeploy previous image tags/commit with same compose command.
+2. Verify `/health/live` and `/health/ready`.
+3. Execute smoke tests.

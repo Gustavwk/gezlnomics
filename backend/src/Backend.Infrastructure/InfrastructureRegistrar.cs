@@ -28,6 +28,7 @@ public sealed class InfrastructureRegistrar : IInfrastructureRegistrar
         services.AddScoped<IRecurringRuleGateway, RecurringRuleGateway>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.AddSingleton<ILoginAttemptGuard, LoginAttemptGuard>();
 
         services.AddHostedService<MigrationHostedService>();
     }

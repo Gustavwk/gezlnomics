@@ -153,13 +153,13 @@ export function useLedgerApp() {
     })();
   }, []);
 
-  async function handleAuth(mode: AuthMode, email: string, password: string) {
+  async function handleAuth(mode: AuthMode, username: string, password: string) {
     setFejl('');
     try {
       const me =
         mode === 'signup'
-          ? await apiClient.auth.signup(email, password)
-          : await apiClient.auth.login(email, password);
+          ? await apiClient.auth.signup(username, password)
+          : await apiClient.auth.login(username, password);
 
       setBruger(me);
       await hentAlt();

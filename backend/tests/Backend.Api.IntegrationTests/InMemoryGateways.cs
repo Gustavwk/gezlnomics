@@ -1,4 +1,4 @@
-using Backend.Application.Abstractions;
+﻿using Backend.Application.Abstractions;
 using Backend.Domain;
 
 namespace Backend.Api.IntegrationTests;
@@ -21,8 +21,8 @@ internal sealed class InMemoryUserGateway : IUserGateway
         _store = store;
     }
 
-    public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken)
-        => Task.FromResult(_store.Users.FirstOrDefault(x => x.Email == email));
+    public Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken)
+        => Task.FromResult(_store.Users.FirstOrDefault(x => x.Username == username));
 
     public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
         => Task.FromResult(_store.Users.FirstOrDefault(x => x.Id == id));

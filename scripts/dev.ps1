@@ -29,8 +29,12 @@ function Get-EnvValue {
 function Wait-ForSwagger {
   param([int]$Timeout)
 
-  $apiPort = Get-EnvValue -Key "API_PORT" -DefaultValue "8080"
-  $swaggerUrl = "http://localhost:$apiPort/swagger/v1/swagger.json"
+  $publicPort = Get-EnvValue -Key "TRAEFIK_HTTP_PORT" -DefaultValue ""
+  if ([string]::IsNullOrWhiteSpace($publicPort)) {
+    $publicPort = Get-EnvValue -Key "API_PORT" -DefaultValue "8080"
+  }
+
+  $swaggerUrl = "http://localhost:$publicPort/swagger/v1/swagger.json"
   $deadline = (Get-Date).AddSeconds($Timeout)
 
   Write-Host "Venter paa Swagger: $swaggerUrl"
@@ -50,15 +54,26 @@ function Wait-ForSwagger {
   throw "Timeout: Swagger blev ikke klar inden for $Timeout sekunder."
 }
 
+function Get-SwaggerUrl {
+  $publicPort = Get-EnvValue -Key "TRAEFIK_HTTP_PORT" -DefaultValue ""
+  if ([string]::IsNullOrWhiteSpace($publicPort)) {
+    $publicPort = Get-EnvValue -Key "API_PORT" -DefaultValue "8080"
+  }
+
+  return "http://localhost:$publicPort/swagger/v1/swagger.json"
+}
+
 function Run-Compose {
   param([string[]]$ComposeArgs)
   & docker compose @ComposeArgs
 }
 
 function Run-TypesGenerate {
+  param([string]$SwaggerUrl)
+
   Push-Location (Join-Path $PSScriptRoot "..\frontend")
   try {
-    & npm run types:generate
+    & npx openapi-typescript $SwaggerUrl -o src/generated/api-types.ts
   }
   finally {
     Pop-Location
@@ -115,7 +130,8 @@ switch ($Command) {
   }
   "types" {
     Wait-ForSwagger -Timeout $TimeoutSeconds
-    Run-TypesGenerate
+    $swaggerUrl = Get-SwaggerUrl
+    Run-TypesGenerate -SwaggerUrl $swaggerUrl
     break
   }
   "sync" {
@@ -127,7 +143,8 @@ switch ($Command) {
       Run-Compose -ComposeArgs @("up", "--build", "-d")
     }
     Wait-ForSwagger -Timeout $TimeoutSeconds
-    Run-TypesGenerate
+    $swaggerUrl = Get-SwaggerUrl
+    Run-TypesGenerate -SwaggerUrl $swaggerUrl
     Run-Compose -ComposeArgs @("ps")
     break
   }

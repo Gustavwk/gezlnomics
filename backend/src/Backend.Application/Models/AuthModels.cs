@@ -1,5 +1,5 @@
 namespace Backend.Application.Models;
 
-public sealed record SignupRequest(string Email, string Password);
-public sealed record LoginRequest(string Email, string Password);
-public sealed record AuthUserDto(Guid Id, string Email);
+public sealed record SignupRequest(string Username, string Password);
+public sealed record LoginRequest(string Username, string Password);
+public sealed record AuthUserDto(Guid Id, string Username);
